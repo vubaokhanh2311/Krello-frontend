@@ -1,56 +1,36 @@
-import "./App.css";
+import React, { Fragment } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { publicRoute } from "./routes";
+import { DefaultLayout } from "./components/Layout";
 
 function App() {
   return (
-    <>
-      <nav className="bg-white shadow-md">
-        <div className="container mx-auto flex items-center justify-between px-6 py-3">
-          {/* Logo */}
-          <div className="text-2xl font-bold text-blue-600">MyWebsite</div>
+    <Router>
+      <Routes>
+        {publicRoute.map((route, index) => {
+          const Page = route.component;
 
-          {/* Navigation Links */}
-          <ul className="flex space-x-6">
-            <li>
-              <a
-                href="#"
-                className="text-gray-700 hover:text-blue-600 transition-colors duration-200"
-              >
-                Home
-              </a>
-            </li>
-            <li>
-              <a
-                href="#"
-                className="text-gray-700 hover:text-blue-600 transition-colors duration-200"
-              >
-                About
-              </a>
-            </li>
-            <li>
-              <a
-                href="#"
-                className="text-gray-700 hover:text-blue-600 transition-colors duration-200"
-              >
-                Services
-              </a>
-            </li>
-            <li>
-              <a
-                href="#"
-                className="text-gray-700 hover:text-blue-600 transition-colors duration-200"
-              >
-                Contact
-              </a>
-            </li>
-          </ul>
+          const Layout =
+            route.layout === null
+              ? Fragment
+              : route.layout
+              ? route.layout
+              : DefaultLayout;
 
-          {/* Action Button */}
-          <button className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition-colors duration-200">
-            Login
-          </button>
-        </div>
-      </nav>
-    </>
+          return (
+            <Route
+              key={index}
+              path={route.path}
+              element={
+                <Layout>
+                  <Page />
+                </Layout>
+              }
+            />
+          );
+        })}
+      </Routes>
+    </Router>
   );
 }
 

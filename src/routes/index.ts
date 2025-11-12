@@ -1,6 +1,7 @@
 import Home from "../pages/Home/index";
 import Board from "../pages/Board/index";
 import Profile from "../pages/Profile/index";
+import Login from "../pages/Auth/Login/index";
 
 import { HeaderOnly } from "../components/Layout";
 
@@ -24,6 +25,11 @@ export const publicRoute: AppRoute[] = [
     path: "/profile",
     component: Profile,
     layout: HeaderOnly,
+  },
+  {
+    path: "/login",
+    component: Login,
+    layout: null,
   },
 ];
 

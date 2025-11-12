@@ -61,7 +61,16 @@ class RestClient {
           _retry?: boolean;
         };
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        const isAuthEndpoint =
+          originalRequest.url?.includes("/auth/login") ||
+          originalRequest.url?.includes("/auth/register") ||
+          originalRequest.url?.includes("/auth/refresh");
+
+        if (
+          error.response?.status === 401 &&
+          !originalRequest._retry &&
+          !isAuthEndpoint
+        ) {
           if (this.isRefreshing) {
             return new Promise((resolve, reject) => {
               this.failedQueue.push({ resolve, reject });
@@ -157,7 +166,7 @@ class RestClient {
 
         case 401:
           return {
-            message: "Phiên đăng nhập hết hạn",
+            message: data.message || "Email hoặc mật khẩu không chính xác",
             statusCode: status,
           };
 

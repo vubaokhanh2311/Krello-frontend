@@ -2,6 +2,7 @@ import Home from "../pages/Home/index";
 import Board from "../pages/Board/index";
 import Profile from "../pages/Profile/index";
 import Login from "../pages/Auth/Login/index";
+import Register from "../pages/Auth/Register/index";
 
 import { HeaderOnly } from "../components/Layout";
 
@@ -29,6 +30,11 @@ export const publicRoute: AppRoute[] = [
   {
     path: "/login",
     component: Login,
+    layout: null,
+  },
+  {
+    path: "/register",
+    component: Register,
     layout: null,
   },
 ];

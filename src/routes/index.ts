@@ -20,7 +20,6 @@ export const publicRoute: AppRoute[] = [
   {
     path: "/board",
     component: Board,
-    layout: null,
   },
   {
     path: "/profile",

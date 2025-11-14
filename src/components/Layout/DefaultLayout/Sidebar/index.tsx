@@ -18,7 +18,7 @@ export default function Sidebar() {
   ];
   const location = useLocation();
   return (
-    <aside className="w-64 h-screen  from-white to-blue-50 border-r border-gray-200 flex flex-col p-4 mt-5">
+    <aside className="w-64 from-white to-blue-50 border-r border-gray-200 flex flex-col p-4 mt-5">
       <nav className="flex flex-col gap-1 mb-6">
         {mainMenu.map((item) => (
           <Link

@@ -11,9 +11,9 @@ import {
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import RestClient from "../../../api/RestClient";
-import type { LoginRequest, LoginResponse } from "./LoginType";
+import type { LoginRequest } from "./LoginType";
 import validateLogin from "../../../utils/LoginValidation";
-
+import { login } from "../../../api/authService";
 export default function LoginForm() {
   const [loading, setLoading] = useState(false);
 
@@ -29,10 +29,16 @@ export default function LoginForm() {
     try {
       setLoading(true);
 
-      const res = await RestClient.post<LoginResponse>("/auth/login", values);
-      if (!res || !res.accessToken || !res.refreshToken) {
-        throw new Error("Đăng nhập thất bại");
+      const res = await login(values);
+      if (!res) {
+        notifications.show({
+          title: "Thất bại",
+          message: "Đăng nhập thất bại",
+          color: "red",
+          autoClose: 3000,
+        });
       }
+
       RestClient.setToken(res.accessToken);
       localStorage.setItem("refreshToken", res.refreshToken);
 

@@ -8,10 +8,9 @@ import {
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
-import RestClient from "../../../api/RestClient";
-import type { RegistrerRequest, RegisterResponse } from "./RegisterType";
+import type { RegistrerRequest } from "./RegisterType";
 import validateRegister from "../../../utils/RegisterValidation";
-
+import { register } from "../../../api/authService";
 export default function LoginForm() {
   const [loading, setLoading] = useState(false);
 
@@ -28,10 +27,7 @@ export default function LoginForm() {
     try {
       setLoading(true);
 
-      const res = await RestClient.post<RegisterResponse>(
-        "/auth/register",
-        values
-      );
+      const res = await register(values);
       if (!res) {
         notifications.show({
           title: "Thất bại",

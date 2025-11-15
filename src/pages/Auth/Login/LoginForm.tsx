@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useUserStore } from "../../../stores/userStore";
+
 import {
   Button,
   Checkbox,
@@ -11,12 +13,12 @@ import {
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import RestClient from "../../../api/RestClient";
-import type { LoginRequest } from "./LoginType";
+import type { LoginRequest } from "../../../types/LoginType";
 import validateLogin from "../../../utils/LoginValidation";
-import { login } from "../../../api/authService";
+import { login, getUserProfile } from "../../../api/authService";
 export default function LoginForm() {
   const [loading, setLoading] = useState(false);
-
+  const { setUser } = useUserStore.getState();
   const form = useForm<LoginRequest>({
     initialValues: {
       email: "",
@@ -37,10 +39,15 @@ export default function LoginForm() {
           color: "red",
           autoClose: 3000,
         });
+        setLoading(false);
+        return;
       }
 
       RestClient.setToken(res.accessToken);
-      localStorage.setItem("refreshToken", res.refreshToken);
+
+      const userProfile = await getUserProfile();
+
+      setUser(userProfile, res.accessToken, res.refreshToken);
 
       notifications.show({
         title: "Thành công",

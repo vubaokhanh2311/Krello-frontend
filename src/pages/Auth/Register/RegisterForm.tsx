@@ -8,7 +8,7 @@ import {
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
-import type { RegistrerRequest } from "./RegisterType";
+import type { RegistrerRequest } from "../../../types/RegisterType";
 import validateRegister from "../../../utils/RegisterValidation";
 import { register } from "../../../api/authService";
 export default function LoginForm() {

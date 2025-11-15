@@ -10,8 +10,13 @@ import {
   IconClipboard,
 } from "@tabler/icons-react";
 import { Avatar, Button, TextInput, Menu, Divider } from "@mantine/core";
+import { useUserStore } from "../../../../stores/userStore";
 
 export default function Header() {
+  const { user } = useUserStore();
+
+  if (!user) return null;
+
   return (
     <header className="sticky top-0 z-50 w-full bg-white border-b border-gray-200 shadow-sm">
       <div className="w-full mx-auto flex items-center justify-between px-6 py-2">
@@ -91,8 +96,12 @@ export default function Header() {
               <Avatar
                 radius="xl"
                 size="md"
-                src="null"
-                alt="User"
+                src={
+                  user.avatarUrl
+                    ? `${import.meta.env.VITE_URL_API}${user.avatarUrl}`
+                    : undefined
+                }
+                alt={user.name}
                 className="cursor-pointer border border-gray-200"
               />
             </Menu.Target>
@@ -100,7 +109,7 @@ export default function Header() {
             <Menu.Dropdown>
               <Menu.Label>Tài khoản</Menu.Label>
               <Menu.Item leftSection={<IconUser size={16} />}>
-                Vũ Bảo Khanh
+                {user.name}
               </Menu.Item>
               <Menu.Item leftSection={<IconSettings size={16} />}>
                 Cài đặt

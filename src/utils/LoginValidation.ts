@@ -1,4 +1,4 @@
-import type { LoginRequest } from "../pages/Auth/Login/LoginType";
+import type { LoginRequest } from "../types/LoginType";
 
 export default function validateLogin(form: LoginRequest) {
   const errors: Partial<Record<keyof LoginRequest, string>> = {};

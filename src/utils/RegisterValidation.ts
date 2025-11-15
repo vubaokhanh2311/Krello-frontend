@@ -1,4 +1,4 @@
-import type { RegistrerRequest } from "../pages/Auth/Register/RegisterType";
+import type { RegistrerRequest } from "../types/RegisterType";
 
 export default function validateRegister(form: RegistrerRequest) {
   const errors: Partial<Record<keyof RegistrerRequest, string>> = {};

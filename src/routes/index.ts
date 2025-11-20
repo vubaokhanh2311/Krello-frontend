@@ -14,6 +14,19 @@ export interface AppRoute {
 
 export const publicRoute: AppRoute[] = [
   {
+    path: "/login",
+    component: Login,
+    layout: null,
+  },
+  {
+    path: "/register",
+    component: Register,
+    layout: null,
+  },
+];
+
+export const privateRoute: AppRoute[] = [
+  {
     path: "/",
     component: Home,
   },
@@ -26,16 +39,4 @@ export const publicRoute: AppRoute[] = [
     component: Profile,
     layout: HeaderOnly,
   },
-  {
-    path: "/login",
-    component: Login,
-    layout: null,
-  },
-  {
-    path: "/register",
-    component: Register,
-    layout: null,
-  },
 ];
-
-export const privateRoute: AppRoute[] = [];

@@ -11,7 +11,7 @@ import {
 } from "@tabler/icons-react";
 import { Avatar, Button, TextInput, Menu, Divider } from "@mantine/core";
 import { useUserStore } from "../../../../stores/userStore";
-
+import { logout } from "../../../../api/authService";
 export default function Header() {
   const { user } = useUserStore();
 
@@ -115,7 +115,11 @@ export default function Header() {
                 Cài đặt
               </Menu.Item>
               <Divider my="sm" />
-              <Menu.Item color="red" leftSection={<IconLogout size={16} />}>
+              <Menu.Item
+                onClick={logout}
+                color="red"
+                leftSection={<IconLogout size={16} />}
+              >
                 Đăng xuất
               </Menu.Item>
             </Menu.Dropdown>

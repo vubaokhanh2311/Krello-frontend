@@ -12,6 +12,7 @@ import {
 import { Avatar, Button, TextInput, Menu, Divider } from "@mantine/core";
 import { useUserStore } from "../../../../stores/userStore";
 import { logout } from "../../../../api/authService";
+import { Link } from "react-router-dom";
 export default function Header() {
   const { user } = useUserStore();
 
@@ -108,7 +109,11 @@ export default function Header() {
 
             <Menu.Dropdown>
               <Menu.Label>Tài khoản</Menu.Label>
-              <Menu.Item leftSection={<IconUser size={16} />}>
+              <Menu.Item
+                component={Link}
+                to="/profile"
+                leftSection={<IconUser size={16} />}
+              >
                 {user.name}
               </Menu.Item>
               <Menu.Item leftSection={<IconSettings size={16} />}>

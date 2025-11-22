@@ -2,6 +2,7 @@ export interface UserProfile {
   id: string;
   name: string;
   email: string;
+  createdAt?: string;
   avatarUrl?: string;
   role?: string;
   permissions?: string[];

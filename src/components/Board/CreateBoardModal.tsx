@@ -39,6 +39,7 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({
 
   const handleSubmit = (values: typeof form.values) => {
     onSubmit(values);
+    form.reset();
   };
 
   return (

@@ -13,9 +13,42 @@ import { Avatar, Button, TextInput, Menu, Divider } from "@mantine/core";
 import { useUserStore } from "../../../../stores/userStore";
 import { logout } from "../../../../api/authService";
 import { Link } from "react-router-dom";
+import { useDisclosure } from "@mantine/hooks";
+import { useState } from "react";
+import { CreateBoardModal } from "../../../Board/CreateBoardModal";
+import { CreateBoard } from "../../../../api/boardService";
+import { notifications } from "@mantine/notifications";
+
 export default function Header() {
   const { user } = useUserStore();
+  const [opened, { open, close }] = useDisclosure(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const handleCreateBoard = async (values: any) => {
+    setIsLoading(true);
 
+    try {
+      await CreateBoard(values);
+      notifications.show({
+        title: "Thành công",
+        message: "Tạo bảng thành công",
+        color: "green",
+        autoClose: 1000,
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      close();
+    } catch (error: any) {
+      notifications.show({
+        title: "Thất bại",
+        message: error?.message || "Tạo bảng thất bại",
+        color: "red",
+        autoClose: 3000,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
   if (!user) return null;
 
   return (
@@ -51,7 +84,10 @@ export default function Header() {
             </Menu.Target>
             <Menu.Dropdown>
               <Menu.Label>Tạo mới</Menu.Label>
-              <Menu.Item leftSection={<IconLayoutBoard size={16} />}>
+              <Menu.Item
+                onClick={open}
+                leftSection={<IconLayoutBoard size={16} />}
+              >
                 Bảng dự án
               </Menu.Item>
               <Menu.Item leftSection={<IconClipboard size={16} />}>
@@ -131,6 +167,12 @@ export default function Header() {
           </Menu>
         </div>
       </div>
+      <CreateBoardModal
+        opened={opened}
+        close={close}
+        onSubmit={handleCreateBoard}
+        isLoading={isLoading}
+      />
     </header>
   );
 }

@@ -3,7 +3,7 @@ import Board from "../pages/Board/index";
 import Profile from "../pages/Profile/index";
 import Login from "../pages/Auth/Login/index";
 import Register from "../pages/Auth/Register/index";
-
+import BoardDetail from "../pages/BoardDetail/index";
 import { HeaderOnly } from "../components/Layout";
 
 export interface AppRoute {
@@ -33,6 +33,11 @@ export const privateRoute: AppRoute[] = [
   {
     path: "/board",
     component: Board,
+  },
+  {
+    path: "/board/:id",
+    component: BoardDetail,
+    layout: HeaderOnly,
   },
   {
     path: "/profile",

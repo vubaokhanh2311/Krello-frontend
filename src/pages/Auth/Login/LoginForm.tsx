@@ -48,6 +48,8 @@ export default function LoginForm() {
       const userProfile = await getUserProfile();
 
       setUser(userProfile, res.accessToken, res.refreshToken);
+      const redirectPath = localStorage.getItem("redirectAfterLogin");
+      const inviteToken = localStorage.getItem("inviteToken");
 
       notifications.show({
         title: "Thành công",
@@ -57,7 +59,17 @@ export default function LoginForm() {
       });
 
       setTimeout(() => {
-        window.location.href = "/";
+        setTimeout(() => {
+          if (redirectPath) {
+            localStorage.removeItem("redirectAfterLogin");
+            window.location.href = redirectPath;
+          } else if (inviteToken) {
+            localStorage.removeItem("inviteToken");
+            window.location.href = `/invite?token=${inviteToken}`;
+          } else {
+            window.location.href = "/";
+          }
+        }, 1000);
       }, 1000);
     } catch (error: any) {
       notifications.show({

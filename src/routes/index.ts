@@ -5,6 +5,7 @@ import Login from "../pages/Auth/Login/index";
 import Register from "../pages/Auth/Register/index";
 import BoardDetail from "../pages/BoardDetail/index";
 import { HeaderOnly } from "../components/Layout";
+import InvitationPage from "../components/Board/InvitationPage";
 
 export interface AppRoute {
   path: string;
@@ -21,6 +22,11 @@ export const publicRoute: AppRoute[] = [
   {
     path: "/register",
     component: Register,
+    layout: null,
+  },
+  {
+    path: "boards/invite/accept",
+    component: InvitationPage,
     layout: null,
   },
 ];

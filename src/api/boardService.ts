@@ -10,3 +10,8 @@ export async function CreateBoard(values: BoardRequest) {
 
   return res;
 }
+
+export async function getBoardsJoinedByUser() {
+  const resresBoardsJoined = await RestClient.get("/boards/joined");
+  return resresBoardsJoined;
+}

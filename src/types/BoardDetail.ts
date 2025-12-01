@@ -20,3 +20,4 @@ export interface BoardData {
   columns: Record<string, ColumnData>;
   columnOrder: string[];
 }
+

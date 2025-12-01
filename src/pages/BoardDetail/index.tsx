@@ -19,10 +19,13 @@ import { useDisclosure } from "@mantine/hooks";
 import { getBoardMembers } from "../../api/MemberService";
 import { useParams } from "react-router-dom";
 import { mapApiToUiMember } from "../../utils/memberMapper";
+import { getBoardDetail } from "../../api/boardService";
+import type { BoardTS } from "../Board/BoardType";
 export default function TaskFlowApp() {
   const [data, setData] = useState<BoardData>(initialData);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+  const [boardDetail, setboardDetail] = useState<BoardTS[]>([]);
 
   const [isCreatingColumn, setIsCreatingColumn] = useState(false);
   const [newColumnTitle, setNewColumnTitle] = useState("");
@@ -39,6 +42,9 @@ export default function TaskFlowApp() {
         setIsLoading(true);
 
         const apiData = await getBoardMembers(id);
+
+        const res = await getBoardDetail(id);
+        setboardDetail(res);
 
         const uiData = apiData.map(mapApiToUiMember);
 
@@ -174,15 +180,23 @@ export default function TaskFlowApp() {
   };
 
   const activeTask = activeId ? data.tasks[activeId] : null;
+  const background = boardDetail.background;
 
+  const isUrl = typeof background === "string" && background.startsWith("http");
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 text-white overflow-hidden">
+    <div
+      className="flex flex-col h-screen  text-white overflow-hidden"
+      style={{
+        background: isUrl
+          ? `url(${background}) center/cover no-repeat`
+          : background,
+      }}
+    >
       <header className="w-full flex flex-col md:flex-row items-center justify-between px-6 py-3 bg-black/20 backdrop-blur-md border-b border-white/10 gap-4">
-        {/* --- KHU VỰC TRÁI: Tên bảng & Yêu thích --- */}
         <div className="flex items-center gap-4 w-full md:w-auto">
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold tracking-tight text-white leading-none">
-              TaskFlow Board
+            <h1 className="text-2xl font-bold tracking-tight text-white leading-none">
+              {boardDetail.name}
             </h1>
           </div>
         </div>

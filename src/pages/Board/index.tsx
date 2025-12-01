@@ -8,7 +8,7 @@ import type { BoardTS } from "./BoardType";
 
 export default function BoardsPage() {
   const [boards, setBoards] = useState<BoardTS[]>([]);
-  const [BoardsJoined, setBoardsJoined] = useState<BoardTS[]>([]);
+  const [boardsJoined, setBoardsJoined] = useState<BoardTS[]>([]);
 
   const [loading, setLoading] = useState(true);
 
@@ -67,10 +67,10 @@ export default function BoardsPage() {
         CÁC BẢNG BẠN ĐÃ THAM GIA
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {BoardsJoined.length === 0 ? (
+        {boardsJoined.length === 0 ? (
           <p className="text-2xl font-bold text-gray-700">Không có bảng nào</p>
         ) : (
-          BoardsJoined.map((boardJoined) => (
+          boardsJoined.map((boardJoined) => (
             <BoardCard
               key={boardJoined.id}
               id={boardJoined.id}

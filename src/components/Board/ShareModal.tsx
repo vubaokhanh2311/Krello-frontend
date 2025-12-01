@@ -63,6 +63,7 @@ const ShareModal: React.FC<ShareModalProps> = ({
         color: "green",
         autoClose: 1000,
       });
+      setLoading(false);
     } catch (error: any) {
       notifications.show({
         title: "Thất bại",

@@ -59,8 +59,8 @@ export const Column: React.FC<ColumnProps> = ({
   return (
     <div
       ref={setNodeRef}
-      className={`flex flex-col w-80 min-w-[300px] border rounded-xl p-2 transition-all duration-300 ${
-        isOver ? "border-blue-400 bg-blue-50" : "border-gray-300 bg-white"
+      className={`flex flex-col w-80 min-w-[300px] bg-gray-100 border rounded-xl p-2 transition-all duration-300 ${
+        isOver ? "border-blue-400 bg-blue-50" : "border-gray-300 "
       }`}
     >
       <div className="flex items-center justify-between mb-3 px-3 h-[32px]">

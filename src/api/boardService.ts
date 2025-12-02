@@ -14,6 +14,7 @@ export async function CreateBoard(values: BoardRequest) {
 export async function getBoardDetail(boardId: string) {
   const res = await RestClient.get(`/boards/${boardId}`);
   return res;
+}
 export async function getBoardsJoinedByUser() {
   const resresBoardsJoined = await RestClient.get("/boards/joined");
   return resresBoardsJoined;

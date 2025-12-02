@@ -11,7 +11,7 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { IconPlus, IconX, IconFilter, IconSettings } from "@tabler/icons-react";
 import { Avatar, Button } from "@mantine/core";
 import type { BoardData, Task, ColumnData } from "../../types/BoardDetail";
-import { initialData } from "../../data/initialData";
+import { notifications } from "@mantine/notifications";
 import { SortableTask } from "../../components/Board/SortableTask";
 import { Column } from "../../components/Board/Colum";
 import ShareModal from "../../components/Board/ShareModal";
@@ -21,8 +21,14 @@ import { useParams } from "react-router-dom";
 import { mapApiToUiMember } from "../../utils/memberMapper";
 import { getBoardDetail } from "../../api/boardService";
 import type { BoardTS } from "../Board/BoardType";
+import { getList, createList, updateList } from "../../api/listService";
+
 export default function TaskFlowApp() {
-  const [data, setData] = useState<BoardData>(initialData);
+  const [data, setData] = useState<BoardData>({
+    tasks: {},
+    columns: {},
+    columnOrder: [],
+  });
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const [boardDetail, setboardDetail] = useState<BoardTS[]>([]);
@@ -37,26 +43,52 @@ export default function TaskFlowApp() {
   const { id } = useParams<{ id: string }>();
 
   useEffect(() => {
-    const fetchMembers = async () => {
+    const fetchBoardInfo = async () => {
       try {
         setIsLoading(true);
 
         const apiData = await getBoardMembers(id);
-
-        const res = await getBoardDetail(id);
-        setboardDetail(res);
-
         const uiData = apiData.map(mapApiToUiMember);
-
         setMembers(uiData);
+
+        const resBoard = await getBoardDetail(id);
+        setboardDetail(resBoard);
+
+        const resList = await getList(id);
+        const sortedColumns = resList.data.sort(
+          (a: any, b: any) => a.position - b.position
+        );
+
+        let apiColumns: Record<string, ColumnData> = {};
+        let apiColumnOrder: string[] = [];
+
+        sortedColumns.forEach((col: any) => {
+          apiColumns[col.id] = {
+            id: col.id,
+            title: col.title,
+            taskIds: [],
+          };
+          apiColumnOrder.push(col.id);
+        });
+
+        setData({
+          tasks: {},
+          columns: apiColumns,
+          columnOrder: apiColumnOrder,
+        });
       } catch (error) {
-        console.error("Failed to fetch members:", error);
+        notifications.show({
+          title: "Thất bại",
+          message: "Thất bại",
+          color: "red",
+          autoClose: 3000,
+        });
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchMembers();
+    fetchBoardInfo();
   }, [opened]);
 
   const sensors = useSensors(
@@ -157,26 +189,74 @@ export default function TaskFlowApp() {
     });
   };
 
-  const handleAddColumn = () => {
+  const handleAddColumn = async () => {
     if (!newColumnTitle.trim()) return;
 
-    const newColId = `col-${Date.now()}`;
-    const newColumn: ColumnData = {
-      id: newColId,
-      title: newColumnTitle,
-      taskIds: [],
-    };
+    try {
+      setIsCreatingColumn(false);
+
+      const newCol = await createList(id!, { title: newColumnTitle });
+
+      setData((prev) => ({
+        ...prev,
+        columns: {
+          ...prev.columns,
+          [newCol.id]: {
+            id: newCol.id,
+            title: newCol.title,
+            taskIds: [],
+          },
+        },
+        columnOrder: [...prev.columnOrder, newCol.id],
+      }));
+
+      setNewColumnTitle("");
+      notifications.show({
+        title: "Thành công",
+        message: "Thêm tiêu đề thành công",
+        color: "green",
+        autoClose: 2000,
+      });
+    } catch (error) {
+      notifications.show({
+        title: "Thất bại",
+        message: "Cập nhật tiêu đề thành công",
+        color: "red",
+        autoClose: 2000,
+      });
+    }
+  };
+
+  const handleUpdateColumnTitle = async (colId: string, newTitle: string) => {
+    if (!newTitle.trim()) return;
 
     setData((prev) => ({
       ...prev,
       columns: {
         ...prev.columns,
-        [newColId]: newColumn,
+        [colId]: {
+          ...prev.columns[colId],
+          title: newTitle,
+        },
       },
-      columnOrder: [...prev.columnOrder, newColId],
     }));
-    setNewColumnTitle("");
-    setIsCreatingColumn(false);
+
+    try {
+      await updateList(id, colId, { title: newTitle });
+      notifications.show({
+        title: "Thành công",
+        message: "Cập nhật tiêu đề thành công",
+        color: "green",
+        autoClose: 2000,
+      });
+    } catch (error) {
+      notifications.show({
+        title: "Thất bại",
+        message: "Cập nhật tiêu đề thành công",
+        color: "red",
+        autoClose: 2000,
+      });
+    }
   };
 
   const activeTask = activeId ? data.tasks[activeId] : null;
@@ -274,6 +354,7 @@ export default function TaskFlowApp() {
                   tasks={tasks}
                   onDeleteTask={handleDeleteTask}
                   onAddTask={handleAddTaskToColumn}
+                  onUpdateTitle={handleUpdateColumnTitle}
                   activeId={activeId}
                   overId={overId}
                 />

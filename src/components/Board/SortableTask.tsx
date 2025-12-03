@@ -3,8 +3,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { IconCalendar, IconTrash } from "@tabler/icons-react";
 import type { Task } from "../../types/BoardDetail";
-import { getPriorityColor } from "../../utils/priorityColor";
-
+import { Avatar } from "@mantine/core";
 interface SortableTaskProps {
   task: Task;
   onDelete: (id: string) => void;
@@ -38,12 +37,12 @@ export const SortableTask: React.FC<SortableTaskProps> = ({
     >
       <div className="flex items-start justify-between mb-2">
         <span
-          className={`px-2 py-1 rounded-md text-xs border font-medium ${getPriorityColor(
-            task.priority
-          )}`}
+          className="px-2 py-1 rounded-md text-xs  font-medium text-black"
+          style={{ backgroundColor: task.priorityColor }}
         >
           {task.priority}
         </span>
+
         <button
           onClick={() => onDelete(task.id)}
           className="opacity-0 group-hover:opacity-100 transition p-1 rounded hover:bg-red-50"
@@ -59,27 +58,33 @@ export const SortableTask: React.FC<SortableTaskProps> = ({
           <span className="text-xs">{task.date}</span>
         </div>
         <div className="flex items-center gap-2">
-          {task.tags.length > 0 && (
-            <div className="flex -space-x-1">
-              {task.tags.map((tag, i) => (
-                <div
-                  key={i}
-                  className="w-2.5 h-2.5 rounded-full border-2 border-white"
-                  style={{ backgroundColor: tag }}
-                />
-              ))}
-            </div>
-          )}
-
-          <div className="flex -space-x-2">
-            {task.members.map((url, i) => (
-              <img
+          <div className="flex -space-x-1">
+            {task.tags.map((tag, i) => (
+              <div
                 key={i}
-                src={url}
-                alt="member"
-                className="w-6 h-6 rounded-full border-2 border-white object-cover"
+                className="w-2.5 h-2.5 rounded-full border-2 border-white"
+                style={{ backgroundColor: tag }}
               />
             ))}
+          </div>
+
+          <div className="flex -space-x-2">
+            <Avatar.Group>
+              {task.members.map((member) =>
+                member.avatar ? (
+                  <Avatar
+                    key={member.id}
+                    src={`${import.meta.env.VITE_URL_API}${member.avatar}`}
+                    alt={member.name}
+                    size="sm"
+                  />
+                ) : (
+                  <Avatar key={member.id} size="sm">
+                    {member.name?.charAt(0).toUpperCase()}
+                  </Avatar>
+                )
+              )}
+            </Avatar.Group>
           </div>
         </div>
       </div>

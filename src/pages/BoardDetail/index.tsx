@@ -22,6 +22,8 @@ import { mapApiToUiMember } from "../../utils/memberMapper";
 import { getBoardDetail } from "../../api/boardService";
 import type { BoardTS } from "../Board/BoardType";
 import { getList, createList, updateList } from "../../api/listService";
+import { getCard, createCard, deleteCard } from "../../api/cardService";
+import { mapApiCardToTask } from "../../utils/mapApiCardToTask";
 
 export default function TaskFlowApp() {
   const [data, setData] = useState<BoardData>({
@@ -71,8 +73,23 @@ export default function TaskFlowApp() {
           apiColumnOrder.push(col.id);
         });
 
+        let tasks: Record<string, Task> = {};
+
+        const cardPromises = sortedColumns.map((col: any) => getCard(col.id));
+        const cardsResults = await Promise.all(cardPromises);
+
+        cardsResults.forEach((resCard, index) => {
+          const col = sortedColumns[index];
+
+          resCard.data.forEach((card: any) => {
+            const task = mapApiCardToTask(card);
+            tasks[task.id] = task;
+            apiColumns[col.id].taskIds.push(task.id);
+          });
+        });
+
         setData({
-          tasks: {},
+          tasks,
           columns: apiColumns,
           columnOrder: apiColumnOrder,
         });
@@ -151,42 +168,80 @@ export default function TaskFlowApp() {
     }
   };
 
-  const handleDeleteTask = (taskId: string) => {
-    const newColumns = { ...data.columns };
+  const handleDeleteTask = async (colId: string, taskId: string) => {
+    try {
+      await deleteCard(colId, taskId);
 
-    Object.keys(newColumns).forEach((colId) => {
-      newColumns[colId].taskIds = newColumns[colId].taskIds.filter(
-        (id) => id !== taskId
-      );
-    });
+      const newColumns = { ...data.columns };
+      const newTasks = { ...data.tasks };
 
-    const newTasks = { ...data.tasks };
-    delete newTasks[taskId];
-    setData({ ...data, tasks: newTasks, columns: newColumns });
+      const col = newColumns[colId];
+      if (col) {
+        const index = col.taskIds.indexOf(taskId);
+        if (index !== -1) {
+          col.taskIds.splice(index, 1);
+
+          col.taskIds.forEach((id, idx) => {
+            if (newTasks[id]) {
+              newTasks[id].position = idx;
+            }
+          });
+        }
+      }
+
+      delete newTasks[taskId];
+      notifications.show({
+        title: "Thành công",
+        message: "Xóa thẻ thành công",
+        color: "green",
+        autoClose: 2000,
+      });
+
+      setData({ ...data, tasks: newTasks, columns: newColumns });
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      notifications.show({
+        title: "Thất bại",
+        message: "Xóa thẻ thất bại",
+        color: "red",
+        autoClose: 2000,
+      });
+    }
   };
 
-  const handleAddTaskToColumn = (colId: string, title: string) => {
-    const taskId = `task-${Date.now()}`;
-    const newTask: Task = {
-      id: taskId,
-      title,
-      date: new Date().toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      }),
-      priority: "Medium",
-      members: [`https://i.pravatar.cc/150?u=${Date.now()}`],
-      tags: [],
-    };
-    const col = data.columns[colId];
-    setData({
-      ...data,
-      tasks: { ...data.tasks, [taskId]: newTask },
-      columns: {
-        ...data.columns,
-        [colId]: { ...col, taskIds: [...col.taskIds, taskId] },
-      },
-    });
+  const handleAddTaskToColumn = async (colId: string, title: string) => {
+    try {
+      const resCard = await createCard(colId, { title });
+
+      const newTask: Task = mapApiCardToTask(resCard);
+
+      const taskId = newTask.id;
+      const col = data.columns[colId];
+      notifications.show({
+        title: "Thành công",
+        message: "Thêm thẻ thành công",
+        color: "green",
+        autoClose: 2000,
+      });
+      setData({
+        ...data,
+        tasks: { ...data.tasks, [taskId]: newTask },
+        columns: {
+          ...data.columns,
+          [colId]: {
+            ...col,
+            taskIds: [...col.taskIds, taskId],
+          },
+        },
+      });
+    } catch (error) {
+      notifications.show({
+        title: "Thất bại",
+        message: "Thêm thẻ thất bại",
+        color: "red",
+        autoClose: 2000,
+      });
+    }
   };
 
   const handleAddColumn = async () => {
@@ -220,7 +275,7 @@ export default function TaskFlowApp() {
     } catch (error) {
       notifications.show({
         title: "Thất bại",
-        message: "Cập nhật tiêu đề thành công",
+        message: "Cập nhật tiêu đề thất bại",
         color: "red",
         autoClose: 2000,
       });

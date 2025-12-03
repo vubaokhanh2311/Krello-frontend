@@ -1,11 +1,14 @@
-export type Priority = "High" | "Medium" | "Low";
-
 export interface Task {
   id: string;
   title: string;
   date: string;
-  priority: Priority;
-  members: string[];
+  priority: string;
+  priorityColor: string;
+  members: {
+    id: string;
+    name: string;
+    avatar: string | null;
+  }[];
   tags: string[];
 }
 
@@ -20,4 +23,3 @@ export interface BoardData {
   columns: Record<string, ColumnData>;
   columnOrder: string[];
 }
-

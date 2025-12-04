@@ -10,6 +10,17 @@ export async function createCard(listId: string, dto: { title: string }) {
   return res;
 }
 
+export async function putCard(
+  listId: string,
+  cardId: string,
+  data: {
+    listId?: string;
+    taskOrder: string[];
+  }
+) {
+  return RestClient.put(`lists/${listId}/cards/${cardId}`, data);
+}
+
 export async function deleteCard(listId: string, cardId: string) {
   const res = await RestClient.delete(`lists/${listId}/cards/${cardId}`);
   return res;

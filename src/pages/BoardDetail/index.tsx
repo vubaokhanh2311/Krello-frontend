@@ -27,10 +27,16 @@ import { mapApiToUiMember } from "../../utils/memberMapper";
 import { getBoardDetail } from "../../api/boardService";
 import type { BoardTS } from "../Board/BoardType";
 import { getList, createList, updateList } from "../../api/listService";
-import { getCard, createCard, deleteCard } from "../../api/cardService";
+import {
+  getCard,
+  createCard,
+  deleteCard,
+  putCard,
+} from "../../api/cardService";
 import { mapApiCardToTask } from "../../utils/mapApiCardToTask";
 import type { Member } from "../../types/Member";
-import type { ApiColumn, ApiCard } from "../../types/BoardDetail";
+import type { ApiColumn } from "../../types/BoardDetail";
+import type { Task as ApiCard } from "../../types/BoardDetail";
 
 interface ApiListResponse {
   data: ApiColumn[];
@@ -48,7 +54,7 @@ export default function TaskFlowApp() {
   });
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
-  const [boardDetail, setboardDetail] = useState<BoardTS[]>([]);
+  const [boardDetail, setboardDetail] = useState<BoardTS>({} as BoardTS);
 
   const [isCreatingColumn, setIsCreatingColumn] = useState(false);
   const [newColumnTitle, setNewColumnTitle] = useState("");
@@ -115,7 +121,7 @@ export default function TaskFlowApp() {
       } catch (error) {
         notifications.show({
           title: "Thất bại",
-          message: "Thất bại",
+          message: "Không thể tải dữ liệu board",
           color: "red",
           autoClose: 3000,
         });
@@ -133,15 +139,18 @@ export default function TaskFlowApp() {
     })
   );
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
     setOverId(null);
     if (!over) return;
 
+    const cardId = active.id as string;
+
     const sourceColId = Object.keys(data.columns).find((colId) =>
-      data.columns[colId].taskIds.includes(active.id as string)
+      data.columns[colId].taskIds.includes(cardId)
     );
+
     if (!sourceColId) return;
 
     const destColId =
@@ -151,41 +160,61 @@ export default function TaskFlowApp() {
 
     if (!data.columns[destColId]) return;
 
+    const sourceCol = data.columns[sourceColId];
+    const destCol = data.columns[destColId];
+
+    let newSourceIds = [...sourceCol.taskIds];
+    let newDestIds = [...destCol.taskIds];
+
     if (sourceColId === destColId) {
-      const col = data.columns[sourceColId];
-      const oldIndex = col.taskIds.indexOf(active.id as string);
-      const newIndex = col.taskIds.indexOf(over.id as string);
-      const newTaskIds = arrayMove(col.taskIds, oldIndex, newIndex);
+      const oldIndex = sourceCol.taskIds.indexOf(cardId);
+      const newIndex = sourceCol.taskIds.indexOf(over.id as string);
+
+      if (oldIndex === newIndex) return;
+
+      const newTaskIds = arrayMove(sourceCol.taskIds, oldIndex, newIndex);
 
       setData((prev) => ({
         ...prev,
         columns: {
           ...prev.columns,
-          [sourceColId]: { ...col, taskIds: newTaskIds },
+          [sourceColId]: { ...sourceCol, taskIds: newTaskIds },
         },
       }));
-    } else {
-      const sourceCol = data.columns[sourceColId];
-      const destCol = data.columns[destColId];
 
-      const newSourceIds = sourceCol.taskIds.filter(
-        (taskId) => taskId !== active.id
-      );
-      const newDestIds = [...destCol.taskIds];
+      try {
+        await putCard(sourceColId, cardId, {
+          taskOrder: newTaskIds,
+        });
+      } catch (err) {
+        console.error(err);
+      }
 
-      const overIndex = newDestIds.indexOf(over.id as string);
+      return;
+    }
 
-      const insertIndex = overIndex >= 0 ? overIndex : newDestIds.length;
-      newDestIds.splice(insertIndex, 0, active.id as string);
+    newSourceIds = newSourceIds.filter((id) => id !== cardId);
 
-      setData((prev) => ({
-        ...prev,
-        columns: {
-          ...prev.columns,
-          [sourceColId]: { ...sourceCol, taskIds: newSourceIds },
-          [destColId]: { ...destCol, taskIds: newDestIds },
-        },
-      }));
+    const overIndex = newDestIds.indexOf(over.id as string);
+    const insertIndex = overIndex >= 0 ? overIndex : newDestIds.length;
+    newDestIds.splice(insertIndex, 0, cardId);
+
+    setData((prev) => ({
+      ...prev,
+      columns: {
+        ...prev.columns,
+        [sourceColId]: { ...sourceCol, taskIds: newSourceIds },
+        [destColId]: { ...destCol, taskIds: newDestIds },
+      },
+    }));
+
+    try {
+      await putCard(destColId, cardId, {
+        listId: destColId,
+        taskOrder: newDestIds,
+      });
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -201,12 +230,6 @@ export default function TaskFlowApp() {
         const index = col.taskIds.indexOf(taskId);
         if (index !== -1) {
           col.taskIds.splice(index, 1);
-
-          col.taskIds.forEach((taskIdItem, idx) => {
-            if (newTasks[taskIdItem]) {
-              newTasks[taskIdItem].position = idx;
-            }
-          });
         }
       }
 
@@ -289,14 +312,14 @@ export default function TaskFlowApp() {
       setNewColumnTitle("");
       notifications.show({
         title: "Thành công",
-        message: "Thêm tiêu đề thành công",
+        message: "Thêm danh sách thành công",
         color: "green",
         autoClose: 2000,
       });
     } catch (error) {
       notifications.show({
         title: "Thất bại",
-        message: "Cập nhật tiêu đề thất bại",
+        message: "Thêm danh sách thất bại",
         color: "red",
         autoClose: 2000,
       });
@@ -328,7 +351,7 @@ export default function TaskFlowApp() {
     } catch (error) {
       notifications.show({
         title: "Thất bại",
-        message: "Cập nhật tiêu đề thành công",
+        message: "Cập nhật tiêu đề thất bại",
         color: "red",
         autoClose: 2000,
       });
@@ -339,9 +362,10 @@ export default function TaskFlowApp() {
   const background = boardDetail.background;
 
   const isUrl = typeof background === "string" && background.startsWith("http");
+
   return (
     <div
-      className="flex flex-col h-screen  text-white overflow-hidden"
+      className="flex flex-col h-screen text-white overflow-hidden"
       style={{
         background: isUrl
           ? `url(${background}) center/cover no-repeat`
@@ -411,6 +435,7 @@ export default function TaskFlowApp() {
           </div>
         </div>
       </header>
+
       <main className="flex-1 overflow-x-auto overflow-y-hidden">
         <div className="min-h-full px-6 py-6 inline-flex items-start gap-6 overflow-y-hidden">
           <DndContext
@@ -492,6 +517,7 @@ export default function TaskFlowApp() {
           </DndContext>
         </div>
       </main>
+
       <ShareModal opened={opened} onClose={close} members={members} />
     </div>
   );

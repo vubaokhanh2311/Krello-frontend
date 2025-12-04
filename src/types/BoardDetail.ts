@@ -29,9 +29,3 @@ export interface ApiColumn {
   title: string;
   position: number;
 }
-
-export interface ApiCard {
-  id: string;
-  title: string;
-  position: number;
-}

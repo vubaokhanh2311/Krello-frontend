@@ -12,7 +12,7 @@ import { SortableTask } from "./SortableTask";
 interface ColumnProps {
   column: ColumnData;
   tasks: Task[];
-  onDeleteTask: (id: string) => void;
+  onDeleteTask: (colId: string, taskId: string) => void;
   onAddTask: (colId: string, title: string) => void;
   onUpdateTitle: (colId: string, newTitle: string) => void;
   activeId: string | null;
@@ -108,7 +108,11 @@ export const Column: React.FC<ColumnProps> = ({
                 )}
 
                 {!isDraggingTask && (
-                  <SortableTask task={task} onDelete={onDeleteTask} />
+                  <SortableTask
+                    key={task.id}
+                    task={task}
+                    onDelete={() => onDeleteTask(column.id, task.id)}
+                  />
                 )}
               </React.Fragment>
             );

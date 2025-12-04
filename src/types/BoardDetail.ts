@@ -23,3 +23,15 @@ export interface BoardData {
   columns: Record<string, ColumnData>;
   columnOrder: string[];
 }
+
+export interface ApiColumn {
+  id: string;
+  title: string;
+  position: number;
+}
+
+export interface ApiCard {
+  id: string;
+  title: string;
+  position: number;
+}

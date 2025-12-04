@@ -7,6 +7,11 @@ import {
   useSensors,
   DragOverlay,
 } from "@dnd-kit/core";
+import type {
+  DragStartEvent,
+  DragEndEvent,
+  DragOverEvent,
+} from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { IconPlus, IconX, IconFilter, IconSettings } from "@tabler/icons-react";
 import { Avatar, Button } from "@mantine/core";
@@ -24,6 +29,16 @@ import type { BoardTS } from "../Board/BoardType";
 import { getList, createList, updateList } from "../../api/listService";
 import { getCard, createCard, deleteCard } from "../../api/cardService";
 import { mapApiCardToTask } from "../../utils/mapApiCardToTask";
+import type { Member } from "../../types/Member";
+import type { ApiColumn, ApiCard } from "../../types/BoardDetail";
+
+interface ApiListResponse {
+  data: ApiColumn[];
+}
+
+interface ApiCardResponse {
+  data: ApiCard[];
+}
 
 export default function TaskFlowApp() {
   const [data, setData] = useState<BoardData>({
@@ -56,15 +71,15 @@ export default function TaskFlowApp() {
         const resBoard = await getBoardDetail(id);
         setboardDetail(resBoard);
 
-        const resList = await getList(id);
+        const resList = (await getList(id)) as ApiListResponse;
         const sortedColumns = resList.data.sort(
-          (a: any, b: any) => a.position - b.position
+          (a, b) => a.position - b.position
         );
 
-        let apiColumns: Record<string, ColumnData> = {};
-        let apiColumnOrder: string[] = [];
+        const apiColumns: Record<string, ColumnData> = {};
+        const apiColumnOrder: string[] = [];
 
-        sortedColumns.forEach((col: any) => {
+        sortedColumns.forEach((col) => {
           apiColumns[col.id] = {
             id: col.id,
             title: col.title,
@@ -73,15 +88,19 @@ export default function TaskFlowApp() {
           apiColumnOrder.push(col.id);
         });
 
-        let tasks: Record<string, Task> = {};
+        const tasks: Record<string, Task> = {};
 
-        const cardPromises = sortedColumns.map((col: any) => getCard(col.id));
-        const cardsResults = await Promise.all(cardPromises);
+        const cardPromises = sortedColumns.map((col: ApiColumn) =>
+          getCard(col.id)
+        );
+        const cardsResults = (await Promise.all(
+          cardPromises
+        )) as ApiCardResponse[];
 
         cardsResults.forEach((resCard, index) => {
           const col = sortedColumns[index];
 
-          resCard.data.forEach((card: any) => {
+          resCard.data.forEach((card: ApiCard) => {
             const task = mapApiCardToTask(card);
             tasks[task.id] = task;
             apiColumns[col.id].taskIds.push(task.id);
@@ -106,7 +125,7 @@ export default function TaskFlowApp() {
     };
 
     fetchBoardInfo();
-  }, [opened]);
+  }, [opened, id]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -114,28 +133,28 @@ export default function TaskFlowApp() {
     })
   );
 
-  const handleDragEnd = (event: any) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
     setOverId(null);
     if (!over) return;
 
     const sourceColId = Object.keys(data.columns).find((colId) =>
-      data.columns[colId].taskIds.includes(active.id)
+      data.columns[colId].taskIds.includes(active.id as string)
     );
     if (!sourceColId) return;
 
     const destColId =
       Object.keys(data.columns).find((colId) =>
-        data.columns[colId].taskIds.includes(over.id)
-      ) || over.id;
+        data.columns[colId].taskIds.includes(over.id as string)
+      ) || (over.id as string);
 
     if (!data.columns[destColId]) return;
 
     if (sourceColId === destColId) {
       const col = data.columns[sourceColId];
-      const oldIndex = col.taskIds.indexOf(active.id);
-      const newIndex = col.taskIds.indexOf(over.id);
+      const oldIndex = col.taskIds.indexOf(active.id as string);
+      const newIndex = col.taskIds.indexOf(over.id as string);
       const newTaskIds = arrayMove(col.taskIds, oldIndex, newIndex);
 
       setData((prev) => ({
@@ -149,13 +168,15 @@ export default function TaskFlowApp() {
       const sourceCol = data.columns[sourceColId];
       const destCol = data.columns[destColId];
 
-      const newSourceIds = sourceCol.taskIds.filter((id) => id !== active.id);
+      const newSourceIds = sourceCol.taskIds.filter(
+        (taskId) => taskId !== active.id
+      );
       const newDestIds = [...destCol.taskIds];
 
-      const overIndex = newDestIds.indexOf(over.id);
+      const overIndex = newDestIds.indexOf(over.id as string);
 
       const insertIndex = overIndex >= 0 ? overIndex : newDestIds.length;
-      newDestIds.splice(insertIndex, 0, active.id);
+      newDestIds.splice(insertIndex, 0, active.id as string);
 
       setData((prev) => ({
         ...prev,
@@ -181,9 +202,9 @@ export default function TaskFlowApp() {
         if (index !== -1) {
           col.taskIds.splice(index, 1);
 
-          col.taskIds.forEach((id, idx) => {
-            if (newTasks[id]) {
-              newTasks[id].position = idx;
+          col.taskIds.forEach((taskIdItem, idx) => {
+            if (newTasks[taskIdItem]) {
+              newTasks[taskIdItem].position = idx;
             }
           });
         }
@@ -396,12 +417,16 @@ export default function TaskFlowApp() {
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
-            onDragStart={(e) => setActiveId(e.active.id as string)}
-            onDragOver={(e) => setOverId(e.over?.id?.toString() ?? null)}
+            onDragStart={(e: DragStartEvent) =>
+              setActiveId(e.active.id as string)
+            }
+            onDragOver={(e: DragOverEvent) =>
+              setOverId(e.over?.id?.toString() ?? null)
+            }
           >
             {data.columnOrder.map((colId) => {
               const col = data.columns[colId];
-              const tasks = col.taskIds.map((id) => data.tasks[id]);
+              const tasks = col.taskIds.map((taskId) => data.tasks[taskId]);
               return (
                 <Column
                   key={colId}

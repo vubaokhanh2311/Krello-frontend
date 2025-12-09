@@ -17,6 +17,7 @@ interface ColumnProps {
   onUpdateTitle: (colId: string, newTitle: string) => void;
   activeId: string | null;
   overId: string | null;
+  onTaskClick: (task: Task) => void;
 }
 
 export const Column: React.FC<ColumnProps> = ({
@@ -25,6 +26,7 @@ export const Column: React.FC<ColumnProps> = ({
   onDeleteTask,
   onAddTask,
   onUpdateTitle,
+  onTaskClick,
   activeId,
   overId,
 }) => {
@@ -112,6 +114,7 @@ export const Column: React.FC<ColumnProps> = ({
                     key={task.id}
                     task={task}
                     onDelete={() => onDeleteTask(column.id, task.id)}
+                    onClick={() => onTaskClick(task)}
                   />
                 )}
               </React.Fragment>

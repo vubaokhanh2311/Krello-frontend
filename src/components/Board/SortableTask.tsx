@@ -8,12 +8,14 @@ interface SortableTaskProps {
   task: Task;
   onDelete: (id: string) => void;
   isDragging?: boolean;
+  onClick?: () => void;
 }
 
 export const SortableTask: React.FC<SortableTaskProps> = ({
   task,
   onDelete,
   isDragging,
+  onClick,
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id: task.id });
@@ -31,24 +33,35 @@ export const SortableTask: React.FC<SortableTaskProps> = ({
       style={style}
       {...attributes}
       {...listeners}
+      onClick={onClick}
       className={`p-4 mb-2 rounded-lg border shadow-sm cursor-grab group bg-white transition-all duration-200 ${
         isDragging ? "shadow-2xl scale-105" : ""
       }`}
     >
       <div className="flex items-start justify-between mb-2">
-        <span
-          className="px-2 py-1 rounded-md text-xs  font-medium text-black"
-          style={{ backgroundColor: task.priorityColor }}
-        >
-          {task.priority}
-        </span>
+        <div className="flex flex-wrap gap-1 mt-2">
+          {task.labels && task.labels.length > 0
+            ? task.labels.map((lb) => (
+                <span
+                  key={lb.id}
+                  className="px-2 py-1 rounded-md text-xs font-medium text-white"
+                  style={{ backgroundColor: lb.color }}
+                >
+                  {lb.name}
+                </span>
+              ))
+            : null}
+        </div>
 
         <button
-          onClick={() => onDelete(task.id)}
-          className="opacity-0 group-hover:opacity-100 transition p-1 rounded hover:bg-red-50"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(task.id);
+          }}
           onPointerDown={(e) => e.stopPropagation()}
+          className="opacity-0 group-hover:opacity-100 transition p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500"
         >
-          <IconTrash size={14} className="text-red-500" />
+          <IconTrash size={16} />
         </button>
       </div>
       <p className="text-gray-800 font-medium text-sm mb-2">{task.title}</p>

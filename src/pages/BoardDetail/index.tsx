@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   DndContext,
   closestCenter,
@@ -27,6 +27,12 @@ import { mapApiToUiMember } from "../../utils/memberMapper";
 import { getBoardDetail } from "../../api/boardService";
 import type { BoardTS } from "../Board/BoardType";
 import { getList, createList, updateList } from "../../api/listService";
+import { TaskDetailModal } from "../../components/Board/TaskDetailModal";
+import {
+  getLabel,
+  updateLabelTask,
+  deleteLabelTask,
+} from "../../api/labelService";
 import {
   getCard,
   createCard,
@@ -60,10 +66,50 @@ export default function TaskFlowApp() {
   const [newColumnTitle, setNewColumnTitle] = useState("");
   const [opened, { open, close }] = useDisclosure(false);
 
+  const [activeCard, setactiveCard] = useState<Task | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [editingLabel, setEditingLabel] = useState<any>(null);
+  const [isEditLabelOpen, setIsEditLabelOpen] = useState(false);
+  const [isCreateLabelOpen, setIsCreateLabelOpen] = useState(false);
+
+  const handleOpenEditLabel = useCallback((label: any) => {
+    setEditingLabel(label);
+    setIsEditLabelOpen(true);
+  }, []);
+
+  const handleOpenCreateLabel = useCallback(() => {
+    setEditingLabel(null);
+    setIsCreateLabelOpen(true);
+  }, []);
+
+  const handleTaskClick = useCallback((task: Task) => {
+    setactiveCard(task);
+    setIsModalOpen(true);
+  }, []);
+
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const { id } = useParams<{ id: string }>();
+
+  const [boardLabels, setBoardLabels] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!isModalOpen) return;
+    loadLabels();
+  }, [isModalOpen]);
+
+  async function loadLabels() {
+    if (!id) return;
+    try {
+      const res = await getLabel(id);
+
+      setBoardLabels(res.data ?? []);
+    } catch (error) {
+      console.error("Failed to load labels", error);
+    }
+  }
 
   useEffect(() => {
     const fetchBoardInfo = async () => {
@@ -218,75 +264,81 @@ export default function TaskFlowApp() {
     }
   };
 
-  const handleDeleteTask = async (colId: string, taskId: string) => {
-    try {
-      await deleteCard(colId, taskId);
+  const handleDeleteTask = useCallback(
+    async (colId: string, taskId: string) => {
+      try {
+        await deleteCard(colId, taskId);
 
-      const newColumns = { ...data.columns };
-      const newTasks = { ...data.tasks };
+        const newColumns = { ...data.columns };
+        const newTasks = { ...data.tasks };
 
-      const col = newColumns[colId];
-      if (col) {
-        const index = col.taskIds.indexOf(taskId);
-        if (index !== -1) {
-          col.taskIds.splice(index, 1);
+        const col = newColumns[colId];
+        if (col) {
+          const index = col.taskIds.indexOf(taskId);
+          if (index !== -1) {
+            col.taskIds.splice(index, 1);
+          }
         }
+
+        delete newTasks[taskId];
+        notifications.show({
+          title: "Thành công",
+          message: "Xóa thẻ thành công",
+          color: "green",
+          autoClose: 2000,
+        });
+
+        setData({ ...data, tasks: newTasks, columns: newColumns });
+      } catch (error) {
+        console.error("Error deleting task:", error);
+        notifications.show({
+          title: "Thất bại",
+          message: "Xóa thẻ thất bại",
+          color: "red",
+          autoClose: 2000,
+        });
       }
+    },
+    [data]
+  );
 
-      delete newTasks[taskId];
-      notifications.show({
-        title: "Thành công",
-        message: "Xóa thẻ thành công",
-        color: "green",
-        autoClose: 2000,
-      });
+  const handleAddTaskToColumn = useCallback(
+    async (colId: string, title: string) => {
+      try {
+        const resCard = await createCard(colId, { title });
 
-      setData({ ...data, tasks: newTasks, columns: newColumns });
-    } catch (error) {
-      console.error("Error deleting task:", error);
-      notifications.show({
-        title: "Thất bại",
-        message: "Xóa thẻ thất bại",
-        color: "red",
-        autoClose: 2000,
-      });
-    }
-  };
+        const newTask: Task = mapApiCardToTask(resCard);
 
-  const handleAddTaskToColumn = async (colId: string, title: string) => {
-    try {
-      const resCard = await createCard(colId, { title });
-
-      const newTask: Task = mapApiCardToTask(resCard);
-
-      const taskId = newTask.id;
-      const col = data.columns[colId];
-      notifications.show({
-        title: "Thành công",
-        message: "Thêm thẻ thành công",
-        color: "green",
-        autoClose: 2000,
-      });
-      setData({
-        ...data,
-        tasks: { ...data.tasks, [taskId]: newTask },
-        columns: {
-          ...data.columns,
-          [colId]: {
-            ...col,
-            taskIds: [...col.taskIds, taskId],
+        const taskId = newTask.id;
+        const col = data.columns[colId];
+        notifications.show({
+          title: "Thành công",
+          message: "Thêm thẻ thành công",
+          color: "green",
+          autoClose: 2000,
+        });
+        setData({
+          ...data,
+          tasks: { ...data.tasks, [taskId]: newTask },
+          columns: {
+            ...data.columns,
+            [colId]: {
+              ...col,
+              taskIds: [...col.taskIds, taskId],
+            },
           },
-        },
-      });
-    } catch (error) {
-      notifications.show({
-        title: "Thất bại",
-        message: "Thêm thẻ thất bại",
-        color: "red",
-        autoClose: 2000,
-      });
-    }
-  };
+        });
+      } catch (error) {
+        notifications.show({
+          title: "Thất bại",
+          message: "Thêm thẻ thất bại",
+          color: "red",
+          autoClose: 2000,
+        });
+      }
+    },
+    [data]
+  );
 
   const handleAddColumn = async () => {
     if (!newColumnTitle.trim()) return;
@@ -326,35 +378,176 @@ export default function TaskFlowApp() {
     }
   };
 
-  const handleUpdateColumnTitle = async (colId: string, newTitle: string) => {
-    if (!newTitle.trim()) return;
+  const handleUpdateColumnTitle = useCallback(
+    async (colId: string, newTitle: string) => {
+      if (!newTitle.trim()) return;
 
-    setData((prev) => ({
-      ...prev,
-      columns: {
-        ...prev.columns,
-        [colId]: {
-          ...prev.columns[colId],
-          title: newTitle,
+      setData((prev) => ({
+        ...prev,
+        columns: {
+          ...prev.columns,
+          [colId]: {
+            ...prev.columns[colId],
+            title: newTitle,
+          },
         },
-      },
-    }));
+      }));
+
+      try {
+        await updateList(id, colId, { title: newTitle });
+        notifications.show({
+          title: "Thành công",
+          message: "Cập nhật tiêu đề thành công",
+          color: "green",
+          autoClose: 2000,
+        });
+      } catch (error) {
+        notifications.show({
+          title: "Thất bại",
+          message: "Cập nhật tiêu đề thất bại",
+          color: "red",
+          autoClose: 2000,
+        });
+      }
+    },
+    [id]
+  );
+
+  const getColumnIdByTask = useCallback(
+    (taskId: string) => {
+      return Object.keys(data.columns).find((key) =>
+        data.columns[key].taskIds.includes(taskId)
+      );
+    },
+    [data.columns]
+  );
+
+  const handleSaveTaskTitle = useCallback(
+    async (taskId: string, newTitle: string) => {
+      try {
+        const colId = getColumnIdByTask(taskId);
+        if (!colId) return;
+
+        const updatedTask = {
+          ...data.tasks[taskId],
+          title: newTitle,
+        };
+
+        setData((prev) => ({
+          ...prev,
+          tasks: {
+            ...prev.tasks,
+            [taskId]: updatedTask,
+          },
+        }));
+
+        setactiveCard(updatedTask);
+
+        await putCard(colId, taskId, { title: newTitle });
+
+        notifications.show({
+          title: "Thành công",
+          message: "Đã cập nhật tiêu đề",
+          color: "green",
+        });
+      } catch (error) {
+        console.error(error);
+        notifications.show({
+          title: "Lỗi",
+          message: "Không thể lưu tiêu đề",
+          color: "red",
+        });
+      }
+    },
+    [data.tasks, getColumnIdByTask]
+  );
+
+  const handleSaveTaskDescription = useCallback(
+    async (taskId: string, desc: string) => {
+      try {
+        const colId = getColumnIdByTask(taskId);
+        if (!colId) return;
+
+        const updatedTask = { ...data.tasks[taskId], description: desc };
+        setData((prev) => ({
+          ...prev,
+          tasks: {
+            ...prev.tasks,
+            [taskId]: updatedTask,
+          },
+        }));
+        setactiveCard(updatedTask);
+
+        await putCard(colId, taskId, { description: desc });
+
+        notifications.show({
+          title: "Thành công",
+          message: "Đã cập nhật mô tả",
+          color: "green",
+        });
+      } catch (error) {
+        console.error(error);
+        notifications.show({
+          title: "Lỗi",
+          message: "Không thể lưu mô tả",
+          color: "red",
+        });
+      }
+    },
+    [data.tasks, getColumnIdByTask]
+  );
+
+  const handleModalDeleteTask = useCallback(
+    (taskId: string) => {
+      const colId = getColumnIdByTask(taskId);
+      if (!colId) return;
+
+      handleDeleteTask(colId, taskId);
+      setIsModalOpen(false);
+    },
+    [getColumnIdByTask, handleDeleteTask]
+  );
+
+  const handleUpdateTaskLabels = async (taskId: string, labelId: string) => {
+    const task = data.tasks[taskId];
+    if (!task) return;
+
+    const hasLabel = task.labelIds.includes(labelId);
+    const newLabelIds = hasLabel
+      ? task.labelIds.filter((id) => id !== labelId)
+      : [...task.labelIds, labelId];
 
     try {
-      await updateList(id, colId, { title: newTitle });
-      notifications.show({
-        title: "Thành công",
-        message: "Cập nhật tiêu đề thành công",
-        color: "green",
-        autoClose: 2000,
-      });
-    } catch (error) {
-      notifications.show({
-        title: "Thất bại",
-        message: "Cập nhật tiêu đề thất bại",
-        color: "red",
-        autoClose: 2000,
-      });
+      setData((prev) => ({
+        ...prev,
+        tasks: {
+          ...prev.tasks,
+          [taskId]: { ...prev.tasks[taskId], labelIds: newLabelIds },
+        },
+      }));
+
+      setactiveCard((prev) =>
+        prev && prev.id === taskId ? { ...prev, labelIds: newLabelIds } : prev
+      );
+
+      if (hasLabel) {
+        await deleteLabelTask(taskId, labelId);
+      } else {
+        await updateLabelTask(taskId, { labelId });
+      }
+    } catch (err) {
+      console.error("Error toggling label:", err);
+
+      setData((prev) => ({
+        ...prev,
+        tasks: {
+          ...prev.tasks,
+          [taskId]: { ...prev.tasks[taskId], labelIds: task.labelIds },
+        },
+      }));
+      setactiveCard((prev) =>
+        prev && prev.id === taskId ? { ...prev, labelIds: task.labelIds } : prev
+      );
     }
   };
 
@@ -462,6 +655,7 @@ export default function TaskFlowApp() {
                   onUpdateTitle={handleUpdateColumnTitle}
                   activeId={activeId}
                   overId={overId}
+                  onTaskClick={handleTaskClick}
                 />
               );
             })}
@@ -519,6 +713,25 @@ export default function TaskFlowApp() {
       </main>
 
       <ShareModal opened={opened} onClose={close} members={members} />
+      <TaskDetailModal
+        opened={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        task={activeCard}
+        columnTitle={
+          activeCard
+            ? Object.values(data.columns).find((col) =>
+                col.taskIds.includes(activeCard.id)
+              )?.title
+            : ""
+        }
+        onSaveTitle={handleSaveTaskTitle}
+        onSaveDescription={handleSaveTaskDescription}
+        onDeleteTask={handleModalDeleteTask}
+        boardLabels={boardLabels}
+        onUpdateTaskLabels={handleUpdateTaskLabels}
+        onOpenEditLabel={handleOpenEditLabel}
+        onOpenCreateLabel={handleOpenCreateLabel}
+      />
     </div>
   );
 }

@@ -25,3 +25,15 @@ export async function deleteCard(listId: string, cardId: string) {
   const res = await RestClient.delete(`lists/${listId}/cards/${cardId}`);
   return res;
 }
+
+export async function updateCard(
+  listId: string,
+  cardId: string,
+  data: {
+    title?: string;
+    description?: string;
+    dueDate?: Date;
+  }
+) {
+  return RestClient.put(`lists/${listId}/cards/${cardId}`, data);
+}

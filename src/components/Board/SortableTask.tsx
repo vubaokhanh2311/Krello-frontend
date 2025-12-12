@@ -2,8 +2,11 @@ import React from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { IconCalendar, IconTrash } from "@tabler/icons-react";
-import type { Task } from "../../types/BoardDetail";
+import type { Task, Label } from "../../types/BoardDetail";
 import { Avatar } from "@mantine/core";
+
+import { useLabelStore } from "../../stores/labelStore";
+
 interface SortableTaskProps {
   task: Task;
   onDelete: (id: string) => void;
@@ -20,10 +23,15 @@ export const SortableTask: React.FC<SortableTaskProps> = ({
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id: task.id });
 
+  const storeLabels = useLabelStore((s) => s.labels);
+  const taskLabels = task.labelIds
+    .map((id) => storeLabels.find((l) => l?.id === id))
+    .filter((l): l is Label => l !== undefined)
+    .map(({ id, name, color }) => ({ id, name, color }));
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-
     zIndex: isDragging ? 999 : "auto",
   };
 
@@ -40,17 +48,15 @@ export const SortableTask: React.FC<SortableTaskProps> = ({
     >
       <div className="flex items-start justify-between mb-2">
         <div className="flex flex-wrap gap-1 mt-2">
-          {task.labels && task.labels.length > 0
-            ? task.labels.map((lb) => (
-                <span
-                  key={lb.id}
-                  className="px-2 py-1 rounded-md text-xs font-medium text-white"
-                  style={{ backgroundColor: lb.color }}
-                >
-                  {lb.name}
-                </span>
-              ))
-            : null}
+          {taskLabels.map((lb) => (
+            <span
+              key={lb.id}
+              className="px-2 py-1 rounded-md text-xs font-medium text-white"
+              style={{ backgroundColor: lb.color }}
+            >
+              {lb.name}
+            </span>
+          ))}
         </div>
 
         <button
@@ -64,12 +70,15 @@ export const SortableTask: React.FC<SortableTaskProps> = ({
           <IconTrash size={16} />
         </button>
       </div>
+
       <p className="text-gray-800 font-medium text-sm mb-2">{task.title}</p>
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1 text-gray-500">
           <IconCalendar size={14} />
           <span className="text-xs">{task.date}</span>
         </div>
+
         <div className="flex items-center gap-2">
           <div className="flex -space-x-1">
             {task.tags.map((tag, i) => (

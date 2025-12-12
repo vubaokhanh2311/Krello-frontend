@@ -1,20 +1,9 @@
-import {
-  IconHome2,
-  IconLayoutBoard,
-  IconTemplate,
-  IconBell,
-  IconActivity,
-  IconSettings,
-} from "@tabler/icons-react";
+import { IconHome2, IconLayoutBoard } from "@tabler/icons-react";
 import { Link, useLocation } from "react-router-dom";
 export default function Sidebar() {
   const mainMenu = [
     { name: "Trang chủ", icon: <IconHome2 size={18} />, path: "/" },
     { name: "Bảng", icon: <IconLayoutBoard size={18} />, path: "/board" },
-    { name: "Mẫu", icon: <IconTemplate size={18} />, path: "/templates" },
-    { name: "Thông báo", icon: <IconBell size={18} />, path: "/notifications" },
-    { name: "Hoạt động", icon: <IconActivity size={18} />, path: "/activity" },
-    { name: "Cài đặt", icon: <IconSettings size={18} />, path: "/settings" },
   ];
   const location = useLocation();
   return (

@@ -14,24 +14,22 @@ import {
   IconPlus,
 } from "@tabler/icons-react";
 
-import type { Task, Label } from "../../utils/mapApiCardToTask";
+import type { Task } from "../../utils/mapApiCardToTask";
 import LabelPicker from "./LabelPicker";
+
+import { useLabelStore } from "../../stores/labelStore";
 
 interface TaskDetailModalProps {
   opened: boolean;
   onClose: () => void;
   task: Task | null;
   columnTitle?: string;
+  boardId: string;
+  onDeleteTask?: (taskId: string) => void;
 
   onSaveDescription: (taskId: string, desc: string) => void;
   onSaveTitle: (taskId: string, title: string) => void;
-  onDeleteTask: (taskId: string) => void;
-
-  boardLabels: Label[];
-
   onUpdateTaskLabels: (taskId: string, labelId: string) => void;
-  onOpenEditLabel: (label: Label) => void;
-  onOpenCreateLabel: () => void;
 }
 
 export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
@@ -39,13 +37,10 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   onClose,
   task,
   columnTitle,
+  boardId,
   onSaveDescription,
   onSaveTitle,
-  // onDeleteTask,
-  boardLabels,
   onUpdateTaskLabels,
-  onOpenEditLabel,
-  onOpenCreateLabel,
 }) => {
   const [description, setDescription] = useState("");
   const [isEditingDesc, setIsEditingDesc] = useState(false);
@@ -54,6 +49,15 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   const [titleValue, setTitleValue] = useState("");
 
   const [commentText, setCommentText] = useState("");
+
+  const labels = useLabelStore((s) => s.labels);
+  const fetchLabels = useLabelStore((s) => s.fetchLabels);
+
+  useEffect(() => {
+    if (opened && boardId) {
+      fetchLabels(boardId);
+    }
+  }, [opened, boardId]);
 
   useEffect(() => {
     if (task) {
@@ -112,7 +116,6 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                   const newTitle = titleValue.trim();
                   if (newTitle !== task.title.trim())
                     onSaveTitle(task.id, newTitle);
-
                   setIsEditingTitle(false);
                 }}
                 onKeyDown={(e) => {
@@ -120,7 +123,6 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                     const newTitle = titleValue.trim();
                     if (newTitle !== task.title.trim())
                       onSaveTitle(task.id, newTitle);
-
                     setIsEditingTitle(false);
                   }
                   if (e.key === "Escape") {
@@ -146,11 +148,10 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               <Popover.Dropdown>
                 <LabelPicker
                   key={task.id}
-                  labels={boardLabels}
+                  boardId={boardId}
+                  labels={labels}
                   taskLabels={task.labelIds}
                   onToggleLabel={toggleLabel}
-                  onEditLabel={onOpenEditLabel}
-                  onCreateLabel={onOpenCreateLabel}
                 />
               </Popover.Dropdown>
             </Popover>

@@ -27,7 +27,7 @@ export interface ApiCard {
 export interface TaskMember {
   id?: string;
   name?: string;
-  avatar?: string;
+  avatar?: string | null;
 }
 export interface Label {
   id: string;
@@ -47,29 +47,44 @@ export interface Task {
   labels: Label[];
 }
 
-export const mapApiCardToTask = (card: ApiCard): Task => ({
-  id: card.id,
-  title: card.title ?? "Untitled",
-  description: card.description,
-  date: card.dueDate ? new Date(card.dueDate).toISOString().slice(0, 10) : "",
+export const mapApiCardToTask = (card: ApiCard): Task => {
+  const apiLabels = card.labels ?? [];
 
-  priority: card.labels?.[0]?.label?.name ?? "Low",
-  priorityColor: card.labels?.[0]?.label?.color ?? "#e5e7eb",
+  return {
+    id: card.id,
+    title: card.title ?? "Untitled",
+    description: card.description,
+    date: card.dueDate ? new Date(card.dueDate).toISOString().slice(0, 10) : "",
 
-  members:
-    card.members?.map((m) => ({
-      id: m.user?.id,
-      name: m.user?.name,
-      avatar: m.user?.avatarUrl,
-    })) ?? [],
+    // priority lấy từ label đầu tiên
+    priority: apiLabels[0]?.label?.name ?? "Low",
+    priorityColor: apiLabels[0]?.label?.color ?? "#e5e7eb",
 
-  tags: card.labels?.map((l) => l.label?.name ?? "").filter(Boolean) ?? [],
+    // members map an toàn
+    members:
+      card.members?.map((m) => ({
+        id: m.user?.id ?? "",
+        name: m.user?.name ?? "",
+        avatar: m.user?.avatarUrl ?? "",
+      })) ?? [],
 
-  labelIds: card.labels?.map((l) => l.label?.id ?? "") ?? [],
-  labels:
-    card.labels?.map((l) => ({
-      id: l.label?.id ?? "",
-      name: l.label?.name ?? "",
-      color: l.label?.color ?? "#999",
-    })) ?? [],
-});
+    // tags: tên label (nếu UI cũ còn dùng)
+    tags: apiLabels.map((l) => l.label?.name ?? "").filter(Boolean),
+
+    // labelIds → quan trọng cho realtime Zustand
+    labelIds: apiLabels.map((l) => l.label?.id ?? "").filter(Boolean),
+
+    // labels → theo đúng interface Task
+    labels: apiLabels
+      .map((l) =>
+        l.label
+          ? {
+              id: l.label.id ?? "",
+              name: l.label.name ?? "",
+              color: l.label.color ?? "#e5e7eb",
+            }
+          : null
+      )
+      .filter(Boolean) as Label[],
+  };
+};

@@ -28,11 +28,8 @@ import { getBoardDetail } from "../../api/boardService";
 import type { BoardTS } from "../Board/BoardType";
 import { getList, createList, updateList } from "../../api/listService";
 import { TaskDetailModal } from "../../components/Board/TaskDetailModal";
-import {
-  getLabel,
-  updateLabelTask,
-  deleteLabelTask,
-} from "../../api/labelService";
+
+import { updateLabelTask, deleteLabelTask } from "../../api/labelService";
 import {
   getCard,
   createCard,
@@ -43,6 +40,8 @@ import { mapApiCardToTask } from "../../utils/mapApiCardToTask";
 import type { Member } from "../../types/Member";
 import type { ApiColumn } from "../../types/BoardDetail";
 import type { Task as ApiCard } from "../../types/BoardDetail";
+
+import { useLabelStore } from "../../stores/labelStore";
 
 interface ApiListResponse {
   data: ApiColumn[];
@@ -69,115 +68,29 @@ export default function TaskFlowApp() {
   const [activeCard, setactiveCard] = useState<Task | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const [editingLabel, setEditingLabel] = useState<any>(null);
-  const [isEditLabelOpen, setIsEditLabelOpen] = useState(false);
-  const [isCreateLabelOpen, setIsCreateLabelOpen] = useState(false);
-
-  const handleOpenEditLabel = useCallback((label: any) => {
-    setEditingLabel(label);
-    setIsEditLabelOpen(true);
-  }, []);
-
-  const handleOpenCreateLabel = useCallback(() => {
-    setEditingLabel(null);
-    setIsCreateLabelOpen(true);
-  }, []);
-
-  const handleTaskClick = useCallback((task: Task) => {
-    setactiveCard(task);
-    setIsModalOpen(true);
-  }, []);
-
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const { id } = useParams<{ id: string }>();
 
-  const [boardLabels, setBoardLabels] = useState<any[]>([]);
+  const fetchLabels = useLabelStore((s) => s.fetchLabels);
 
   useEffect(() => {
-    if (!isModalOpen) return;
-    loadLabels();
-  }, [isModalOpen]);
-
-  async function loadLabels() {
-    if (!id) return;
-    try {
-      const res = await getLabel(id);
-
-      setBoardLabels(res.data ?? []);
-    } catch (error) {
-      console.error("Failed to load labels", error);
+    if (isModalOpen && id) {
+      fetchLabels(id).catch(() => {});
     }
-  }
+  }, [isModalOpen, id, fetchLabels]);
 
   useEffect(() => {
-    const fetchBoardInfo = async () => {
-      try {
-        setIsLoading(true);
+    if (id) {
+      fetchLabels(id).catch(() => {});
+    }
+  }, [id, fetchLabels]);
 
-        const apiData = await getBoardMembers(id);
-        const uiData = apiData.map(mapApiToUiMember);
-        setMembers(uiData);
-
-        const resBoard = await getBoardDetail(id);
-        setboardDetail(resBoard);
-
-        const resList = (await getList(id)) as ApiListResponse;
-        const sortedColumns = resList.data.sort(
-          (a, b) => a.position - b.position
-        );
-
-        const apiColumns: Record<string, ColumnData> = {};
-        const apiColumnOrder: string[] = [];
-
-        sortedColumns.forEach((col) => {
-          apiColumns[col.id] = {
-            id: col.id,
-            title: col.title,
-            taskIds: [],
-          };
-          apiColumnOrder.push(col.id);
-        });
-
-        const tasks: Record<string, Task> = {};
-
-        const cardPromises = sortedColumns.map((col: ApiColumn) =>
-          getCard(col.id)
-        );
-        const cardsResults = (await Promise.all(
-          cardPromises
-        )) as ApiCardResponse[];
-
-        cardsResults.forEach((resCard, index) => {
-          const col = sortedColumns[index];
-
-          resCard.data.forEach((card: ApiCard) => {
-            const task = mapApiCardToTask(card);
-            tasks[task.id] = task;
-            apiColumns[col.id].taskIds.push(task.id);
-          });
-        });
-
-        setData({
-          tasks,
-          columns: apiColumns,
-          columnOrder: apiColumnOrder,
-        });
-      } catch (error) {
-        notifications.show({
-          title: "Thất bại",
-          message: "Không thể tải dữ liệu board",
-          color: "red",
-          autoClose: 3000,
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchBoardInfo();
-  }, [opened, id]);
+  const handleTaskClick = useCallback((task: Task) => {
+    setactiveCard(task);
+    setIsModalOpen(true);
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -209,9 +122,6 @@ export default function TaskFlowApp() {
     const sourceCol = data.columns[sourceColId];
     const destCol = data.columns[destColId];
 
-    let newSourceIds = [...sourceCol.taskIds];
-    let newDestIds = [...destCol.taskIds];
-
     if (sourceColId === destColId) {
       const oldIndex = sourceCol.taskIds.indexOf(cardId);
       const newIndex = sourceCol.taskIds.indexOf(over.id as string);
@@ -239,8 +149,9 @@ export default function TaskFlowApp() {
       return;
     }
 
-    newSourceIds = newSourceIds.filter((id) => id !== cardId);
+    const newSourceIds = sourceCol.taskIds.filter((id) => id !== cardId);
 
+    const newDestIds = [...destCol.taskIds];
     const overIndex = newDestIds.indexOf(over.id as string);
     const insertIndex = overIndex >= 0 ? overIndex : newDestIds.length;
     newDestIds.splice(insertIndex, 0, cardId);
@@ -556,6 +467,74 @@ export default function TaskFlowApp() {
 
   const isUrl = typeof background === "string" && background.startsWith("http");
 
+  useEffect(() => {
+    const fetchBoardInfo = async () => {
+      try {
+        setIsLoading(true);
+
+        const apiData = await getBoardMembers(id);
+        const uiData = apiData.map(mapApiToUiMember);
+        setMembers(uiData);
+
+        const resBoard = await getBoardDetail(id);
+        setboardDetail(resBoard);
+
+        const resList = (await getList(id)) as ApiListResponse;
+        const sortedColumns = resList.data.sort(
+          (a, b) => a.position - b.position
+        );
+
+        const apiColumns: Record<string, ColumnData> = {};
+        const apiColumnOrder: string[] = [];
+
+        sortedColumns.forEach((col) => {
+          apiColumns[col.id] = {
+            id: col.id,
+            title: col.title,
+            taskIds: [],
+          };
+          apiColumnOrder.push(col.id);
+        });
+
+        const tasks: Record<string, Task> = {};
+
+        const cardPromises = sortedColumns.map((col: ApiColumn) =>
+          getCard(col.id)
+        );
+        const cardsResults = (await Promise.all(
+          cardPromises
+        )) as ApiCardResponse[];
+
+        cardsResults.forEach((resCard, index) => {
+          const col = sortedColumns[index];
+
+          resCard.data.forEach((card: ApiCard) => {
+            const task = mapApiCardToTask(card);
+            tasks[task.id] = task;
+            apiColumns[col.id].taskIds.push(task.id);
+          });
+        });
+
+        setData({
+          tasks,
+          columns: apiColumns,
+          columnOrder: apiColumnOrder,
+        });
+      } catch (error) {
+        notifications.show({
+          title: "Thất bại",
+          message: "Không thể tải dữ liệu board",
+          color: "red",
+          autoClose: 3000,
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchBoardInfo();
+  }, [opened, id]);
+
   return (
     <div
       className="flex flex-col h-screen text-white overflow-hidden"
@@ -715,6 +694,7 @@ export default function TaskFlowApp() {
       <ShareModal opened={opened} onClose={close} members={members} />
       <TaskDetailModal
         opened={isModalOpen}
+        boardId={id!}
         onClose={() => setIsModalOpen(false)}
         task={activeCard}
         columnTitle={
@@ -726,11 +706,8 @@ export default function TaskFlowApp() {
         }
         onSaveTitle={handleSaveTaskTitle}
         onSaveDescription={handleSaveTaskDescription}
-        onDeleteTask={handleModalDeleteTask}
-        boardLabels={boardLabels}
         onUpdateTaskLabels={handleUpdateTaskLabels}
-        onOpenEditLabel={handleOpenEditLabel}
-        onOpenCreateLabel={handleOpenCreateLabel}
+        onDeleteTask={handleModalDeleteTask}
       />
     </div>
   );

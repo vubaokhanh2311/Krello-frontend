@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Checkbox, Avatar, Text } from "@mantine/core";
 import type { Member } from "../../types/Member";
 import type { TaskMember } from "../../utils/mapApiCardToTask";
+import { includesIgnoreCase, normalizeKeyword } from "../../utils/stringUtils";
 
 interface MemberPickerProps {
   boardId: string;
@@ -18,15 +19,15 @@ export default function MemberPicker({
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
-    const keyword = search.toLowerCase().trim();
+    const keyword = normalizeKeyword(search);
 
     if (!Array.isArray(boardMembers)) return [];
 
     return boardMembers.filter((m) => {
       if (!m || typeof m !== "object") return false;
       if (!m.name && !m.email) return false;
-      const nameMatch = m.name?.toLowerCase().includes(keyword) ?? false;
-      const emailMatch = m.email?.toLowerCase().includes(keyword) ?? false;
+      const nameMatch = includesIgnoreCase(m.name, keyword);
+      const emailMatch = includesIgnoreCase(m.email, keyword);
       return nameMatch || emailMatch;
     });
   }, [search, boardMembers]);

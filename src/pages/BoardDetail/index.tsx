@@ -473,9 +473,7 @@ export default function TaskFlowApp() {
 
     try {
       if (existingMember) {
-        // Cần cardMemberId để xóa, nếu không có thì thử dùng userId
-        const memberIdToDelete = existingMember.cardMemberId || userId;
-        await removeCardMember(taskId, memberIdToDelete);
+        await removeCardMember(taskId, userId);
         const newMembers = task.members.filter((m) => m.id !== userId);
         setData((prev) => ({
           ...prev,
@@ -485,18 +483,14 @@ export default function TaskFlowApp() {
           },
         }));
         setactiveCard((prev) =>
-          prev && prev.id === taskId
-            ? { ...prev, members: newMembers }
-            : prev
+          prev && prev.id === taskId ? { ...prev, members: newMembers } : prev
         );
       } else {
         if (!member) return;
-        const response = await addCardMember(taskId, { userId });
-        // Lưu cardMemberId từ response nếu có
-        const cardMemberId = response?.id || response?.cardMemberId || "";
+        await addCardMember(taskId, { userId });
+
         const newMember = {
           id: member.id,
-          cardMemberId: cardMemberId,
           name: member.name,
           avatar: member.avatar,
         };
@@ -509,16 +503,14 @@ export default function TaskFlowApp() {
           },
         }));
         setactiveCard((prev) =>
-          prev && prev.id === taskId
-            ? { ...prev, members: newMembers }
-            : prev
+          prev && prev.id === taskId ? { ...prev, members: newMembers } : prev
         );
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error toggling member:", err);
       notifications.show({
         title: "Lỗi",
-        message: "Không thể cập nhật thành viên",
+        message: err?.message || "Không thể cập nhật thành viên",
         color: "red",
       });
     }

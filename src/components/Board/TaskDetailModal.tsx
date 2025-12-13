@@ -12,10 +12,13 @@ import {
   IconAlignLeft,
   IconMessageCircle,
   IconPlus,
+  IconUser,
 } from "@tabler/icons-react";
 
 import type { Task } from "../../utils/mapApiCardToTask";
 import LabelPicker from "./LabelPicker";
+import MemberPicker from "./MemberPicker";
+import type { Member } from "../../types/Member";
 
 import { useLabelStore } from "../../stores/labelStore";
 
@@ -26,10 +29,11 @@ interface TaskDetailModalProps {
   columnTitle?: string;
   boardId: string;
   onDeleteTask?: (taskId: string) => void;
-
+  boardMembers: Member[];
   onSaveDescription: (taskId: string, desc: string) => void;
   onSaveTitle: (taskId: string, title: string) => void;
   onUpdateTaskLabels: (taskId: string, labelId: string) => void;
+  onUpdateTaskMembers: (taskId: string, userId: string) => void;
 }
 
 export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
@@ -38,9 +42,11 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   task,
   columnTitle,
   boardId,
+  boardMembers,
   onSaveDescription,
   onSaveTitle,
   onUpdateTaskLabels,
+  onUpdateTaskMembers,
 }) => {
   const [description, setDescription] = useState("");
   const [isEditingDesc, setIsEditingDesc] = useState(false);
@@ -72,6 +78,10 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 
   const toggleLabel = (labelId: string) => {
     onUpdateTaskLabels(task.id, labelId);
+  };
+
+  const toggleMember = (userId: string) => {
+    onUpdateTaskMembers(task.id, userId);
   };
 
   return (
@@ -152,6 +162,22 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                   labels={labels}
                   taskLabels={task.labelIds}
                   onToggleLabel={toggleLabel}
+                />
+              </Popover.Dropdown>
+            </Popover>
+
+            <Popover position="bottom-start" shadow="md">
+              <Popover.Target>
+                <Button leftSection={<IconUser size={16} />}>Thành viên</Button>
+              </Popover.Target>
+
+              <Popover.Dropdown>
+                <MemberPicker
+                  key={task.id}
+                  boardId={boardId}
+                  boardMembers={boardMembers}
+                  taskMembers={task.members}
+                  onToggleMember={toggleMember}
                 />
               </Popover.Dropdown>
             </Popover>

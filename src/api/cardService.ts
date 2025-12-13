@@ -37,3 +37,13 @@ export async function updateCard(
 ) {
   return RestClient.put(`lists/${listId}/cards/${cardId}`, data);
 }
+
+export async function addCardMember(cardId: string, dto: { userId: string }) {
+  const res = await RestClient.post(`cards/${cardId}/members`, dto);
+  return res;
+}
+
+export async function removeCardMember(cardId: string, memberId: string) {
+  const res = await RestClient.delete(`cards/${cardId}/members/${memberId}`);
+  return res;
+}

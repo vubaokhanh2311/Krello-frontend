@@ -35,6 +35,8 @@ import {
   createCard,
   deleteCard,
   putCard,
+  addCardMember,
+  removeCardMember,
 } from "../../api/cardService";
 import { mapApiCardToTask } from "../../utils/mapApiCardToTask";
 import type { Member } from "../../types/Member";
@@ -462,6 +464,66 @@ export default function TaskFlowApp() {
     }
   };
 
+  const handleUpdateTaskMembers = async (taskId: string, userId: string) => {
+    const task = data.tasks[taskId];
+    if (!task) return;
+
+    const existingMember = task.members.find((m) => m.id === userId);
+    const member = members.find((m) => m.id === userId);
+
+    try {
+      if (existingMember) {
+        // Cần cardMemberId để xóa, nếu không có thì thử dùng userId
+        const memberIdToDelete = existingMember.cardMemberId || userId;
+        await removeCardMember(taskId, memberIdToDelete);
+        const newMembers = task.members.filter((m) => m.id !== userId);
+        setData((prev) => ({
+          ...prev,
+          tasks: {
+            ...prev.tasks,
+            [taskId]: { ...prev.tasks[taskId], members: newMembers },
+          },
+        }));
+        setactiveCard((prev) =>
+          prev && prev.id === taskId
+            ? { ...prev, members: newMembers }
+            : prev
+        );
+      } else {
+        if (!member) return;
+        const response = await addCardMember(taskId, { userId });
+        // Lưu cardMemberId từ response nếu có
+        const cardMemberId = response?.id || response?.cardMemberId || "";
+        const newMember = {
+          id: member.id,
+          cardMemberId: cardMemberId,
+          name: member.name,
+          avatar: member.avatar,
+        };
+        const newMembers = [...task.members, newMember];
+        setData((prev) => ({
+          ...prev,
+          tasks: {
+            ...prev.tasks,
+            [taskId]: { ...prev.tasks[taskId], members: newMembers },
+          },
+        }));
+        setactiveCard((prev) =>
+          prev && prev.id === taskId
+            ? { ...prev, members: newMembers }
+            : prev
+        );
+      }
+    } catch (err) {
+      console.error("Error toggling member:", err);
+      notifications.show({
+        title: "Lỗi",
+        message: "Không thể cập nhật thành viên",
+        color: "red",
+      });
+    }
+  };
+
   const activeTask = activeId ? data.tasks[activeId] : null;
   const background = boardDetail.background;
 
@@ -704,9 +766,11 @@ export default function TaskFlowApp() {
               )?.title
             : ""
         }
+        boardMembers={members}
         onSaveTitle={handleSaveTaskTitle}
         onSaveDescription={handleSaveTaskDescription}
         onUpdateTaskLabels={handleUpdateTaskLabels}
+        onUpdateTaskMembers={handleUpdateTaskMembers}
         onDeleteTask={handleModalDeleteTask}
       />
     </div>

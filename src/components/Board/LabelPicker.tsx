@@ -3,6 +3,7 @@ import { Checkbox } from "@mantine/core";
 import { IconPencil } from "@tabler/icons-react";
 import type { Label } from "../../utils/mapApiCardToTask";
 import LabelCreator from "./LabelCreator";
+import { includesIgnoreCase, normalizeKeyword } from "../../utils/stringUtils";
 
 import { useLabelStore } from "../../stores/labelStore";
 
@@ -30,14 +31,14 @@ export default function LabelPicker({
   }, [boardId]);
 
   const filtered = useMemo(() => {
-    const keyword = search.toLowerCase().trim();
+    const keyword = normalizeKeyword(search);
 
     if (!Array.isArray(labels)) return [];
 
     return labels.filter((l) => {
       if (!l || typeof l !== "object") return false;
       if (!l.name) return false;
-      return l.name.toLowerCase().includes(keyword);
+      return includesIgnoreCase(l.name, keyword);
     });
   }, [search, labels]);
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Modal,
   Textarea,
@@ -7,20 +7,30 @@ import {
   ScrollArea,
   Popover,
 } from "@mantine/core";
-
 import {
   IconAlignLeft,
   IconMessageCircle,
   IconPlus,
   IconUser,
+  IconCalendar,
 } from "@tabler/icons-react";
-
+import { notifications } from "@mantine/notifications";
 import type { Task } from "../../utils/mapApiCardToTask";
 import LabelPicker from "./LabelPicker";
 import MemberPicker from "./MemberPicker";
 import type { Member } from "../../types/Member";
-
+import DuePicker from "./DuePicker";
 import { useLabelStore } from "../../stores/labelStore";
+import { useUserStore } from "../../stores/userStore";
+import { useCommentStore } from "../../stores/commentStore";
+import type { Comment } from "../../types/Comment";
+import { IconTrash, IconEdit, IconX, IconCheck } from "@tabler/icons-react";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import "dayjs/locale/vi";
+
+dayjs.extend(relativeTime);
+dayjs.locale("vi");
 
 interface TaskDetailModalProps {
   opened: boolean;
@@ -34,6 +44,7 @@ interface TaskDetailModalProps {
   onSaveTitle: (taskId: string, title: string) => void;
   onUpdateTaskLabels: (taskId: string, labelId: string) => void;
   onUpdateTaskMembers: (taskId: string, userId: string) => void;
+  onSaveDueDate: (taskId: string, dueDate: string | null) => void;
 }
 
 export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
@@ -47,6 +58,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   onSaveTitle,
   onUpdateTaskLabels,
   onUpdateTaskMembers,
+  onSaveDueDate,
 }) => {
   const [description, setDescription] = useState("");
   const [isEditingDesc, setIsEditingDesc] = useState(false);
@@ -55,9 +67,28 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   const [titleValue, setTitleValue] = useState("");
 
   const [commentText, setCommentText] = useState("");
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingCommentText, setEditingCommentText] = useState("");
 
   const labels = useLabelStore((s) => s.labels);
   const fetchLabels = useLabelStore((s) => s.fetchLabels);
+  const user = useUserStore((s) => s.user);
+
+  const taskCommentsRaw = useCommentStore((state) =>
+    task?.id ? state.comments[task.id] : undefined
+  );
+
+  const fetchComments = useCommentStore((s) => s.fetchComments);
+  const addComment = useCommentStore((s) => s.addComment);
+  const updateComment = useCommentStore((s) => s.updateComment);
+  const deleteComment = useCommentStore((s) => s.deleteComment);
+
+  const taskComments = useMemo(() => {
+    if (!taskCommentsRaw) return [];
+    return taskCommentsRaw.filter((c) => c && c.user);
+  }, [taskCommentsRaw]);
+
+  const [dueDate, setDueDate] = useState<Date | null>(null);
 
   useEffect(() => {
     if (opened && boardId) {
@@ -71,8 +102,68 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
       setDescription(task.description ?? "");
       setIsEditingTitle(false);
       setIsEditingDesc(false);
+
+      if (task.date && task.date.trim()) {
+        const parsedDate = new Date(task.date);
+        if (!isNaN(parsedDate.getTime())) {
+          setDueDate(parsedDate);
+        } else {
+          setDueDate(null);
+        }
+      } else {
+        setDueDate(null);
+      }
+      fetchComments(task.id);
     }
-  }, [task]);
+  }, [task, fetchComments]);
+
+  const handleAddComment = async () => {
+    if (!commentText.trim() || !task) return;
+    const commentContent = commentText.trim();
+    setCommentText("");
+    try {
+      await addComment(task.id, commentContent);
+    } catch (error) {
+      setCommentText(commentContent);
+    }
+  };
+
+  const handleUpdateComment = async (commentId: string) => {
+    if (!editingCommentText.trim() || !task) return;
+    try {
+      await updateComment(task.id, commentId, editingCommentText);
+      setEditingCommentId(null);
+      setEditingCommentText("");
+    } catch (error) {
+      console.error("Failed to update comment:", error);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!task) return;
+
+    try {
+      await deleteComment(task.id, commentId);
+      notifications.show({
+        title: "Thành công",
+        message: "Xoá bình luận thành công",
+        color: "green",
+        autoClose: 2000,
+      });
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+    }
+  };
+
+  const startEditing = (comment: Comment) => {
+    setEditingCommentId(comment.id);
+    setEditingCommentText(comment.content);
+  };
+
+  const cancelEditing = () => {
+    setEditingCommentId(null);
+    setEditingCommentText("");
+  };
 
   if (!task) return null;
 
@@ -92,6 +183,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
       padding={0}
       radius="lg"
       withCloseButton={false}
+      zIndex={200}
       scrollAreaComponent={ScrollArea.Autosize}
       styles={{ body: { backgroundColor: "white" } }}
     >
@@ -181,6 +273,22 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 />
               </Popover.Dropdown>
             </Popover>
+            <Popover shadow="md" position="bottom-start">
+              <Popover.Target>
+                <Button leftSection={<IconCalendar size={16} />}>
+                  {dueDate ? "Ngày hết hạn" : "Thêm ngày hết hạn"}
+                </Button>
+              </Popover.Target>
+              <Popover.Dropdown>
+                <DuePicker
+                  dueDate={dueDate}
+                  onChange={(date) => {
+                    setDueDate(date);
+                    onSaveDueDate(task.id, date ? date.toISOString() : null);
+                  }}
+                />
+              </Popover.Dropdown>
+            </Popover>
           </div>
 
           <div>
@@ -247,24 +355,150 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             </Button>
           </div>
 
-          <Textarea
-            placeholder="Viết bình luận..."
-            minRows={1}
-            autosize
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-          />
+          <div className="space-y-4">
+            <div className="flex gap-3">
+              {user && (
+                <Avatar
+                  src={
+                    user.avatarUrl
+                      ? `${import.meta.env.VITE_URL_API}${user.avatarUrl}`
+                      : undefined
+                  }
+                  color="blue"
+                  size="sm"
+                >
+                  {!user.avatarUrl && user.name?.charAt(0).toUpperCase()}
+                </Avatar>
+              )}
+              <div className="flex-1">
+                <Textarea
+                  placeholder="Viết bình luận..."
+                  minRows={2}
+                  autosize
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                      handleAddComment();
+                    }
+                  }}
+                />
+                <div className="flex justify-end mt-2">
+                  <Button
+                    size="xs"
+                    onClick={handleAddComment}
+                    disabled={!commentText.trim()}
+                  >
+                    Lưu
+                  </Button>
+                </div>
+              </div>
+            </div>
 
-          <div className="flex gap-3 pt-2">
-            <Avatar color="orange">VK</Avatar>
-            <div>
-              <p className="text-sm text-gray-800">
-                <b>Vũ Bảo Khanh</b> đã thêm thẻ vào danh sách{" "}
-                <b>{columnTitle}</b>
-              </p>
-              <p className="text-xs text-blue-600 underline cursor-pointer">
-                21:32 31 thg 10, 2025
-              </p>
+            <div className="space-y-4 max-h-[400px] overflow-y-auto">
+              {taskComments.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">
+                  Chưa có bình luận nào
+                </p>
+              ) : (
+                taskComments.map((comment) => {
+                  const isMyComment =
+                    user &&
+                    comment.user &&
+                    (String(user.id) === String(comment.userId) ||
+                      String(user.id) === String(comment.user.id));
+
+                  return (
+                    <div key={comment.id} className="flex gap-3">
+                      <Avatar
+                        src={
+                          comment.user?.avatarUrl
+                            ? `${import.meta.env.VITE_URL_API}${
+                                comment.user.avatarUrl
+                              }`
+                            : undefined
+                        }
+                        color="blue"
+                        size="sm"
+                        className="shrink-0"
+                      >
+                        {!comment.user?.avatarUrl &&
+                          comment.user?.name?.charAt(0).toUpperCase()}
+                      </Avatar>
+                      <div className="flex-1">
+                        {editingCommentId === comment.id ? (
+                          <div className="space-y-2">
+                            <Textarea
+                              minRows={2}
+                              autosize
+                              value={editingCommentText}
+                              onChange={(e) =>
+                                setEditingCommentText(e.target.value)
+                              }
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                size="xs"
+                                onClick={() => handleUpdateComment(comment.id)}
+                                disabled={!editingCommentText.trim()}
+                                leftSection={<IconCheck size={14} />}
+                              >
+                                Lưu
+                              </Button>
+                              <Button
+                                size="xs"
+                                variant="subtle"
+                                onClick={cancelEditing}
+                                leftSection={<IconX size={14} />}
+                              >
+                                Hủy
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="bg-white rounded-lg p-3 shadow-sm">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <p className="text-sm font-semibold text-gray-800">
+                                  {comment.user?.name || "Người dùng ẩn danh"}
+                                </p>
+                                <p className="text-sm text-gray-700 mt-1 whitespace-pre-wrap">
+                                  {comment.content}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-2">
+                                  {dayjs(comment.createdAt).fromNow()}
+                                  {comment.updatedAt !== comment.createdAt &&
+                                    " (đã chỉnh sửa)"}
+                                </p>
+                              </div>
+                              {isMyComment && (
+                                <div className="flex gap-1 ml-2">
+                                  <button
+                                    onClick={() => startEditing(comment)}
+                                    className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
+                                    title="Chỉnh sửa"
+                                  >
+                                    <IconEdit size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      handleDeleteComment(comment.id)
+                                    }
+                                    className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded"
+                                    title="Xóa"
+                                  >
+                                    <IconTrash size={14} />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>

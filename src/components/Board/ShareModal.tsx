@@ -42,32 +42,35 @@ const ShareModal: React.FC<ShareModalProps> = ({
   });
 
   const handleSubmit = async (values: InviteMember) => {
+    if (!id) {
+      notifications.show({
+        title: "Lỗi",
+        message: "Không tìm thấy board ID",
+        color: "red",
+        autoClose: 3000,
+      });
+      return;
+    }
+
     try {
       setLoading(true);
 
-      const res = await inviteMember(id, values);
-      if (!res) {
-        notifications.show({
-          title: "Thất bại",
-          message: "Đăng nhập thất bại",
-          color: "red",
-          autoClose: 3000,
-        });
-        setLoading(false);
-        return;
-      }
+      await inviteMember(id, values);
 
       notifications.show({
         title: "Thành công",
-        message: "Đăng nhập thành công",
+        message: "Đã gửi lời mời thành công",
         color: "green",
-        autoClose: 1000,
+        autoClose: 2000,
       });
+
+      // Reset form after success
+      form.reset();
       setLoading(false);
     } catch (error: any) {
       notifications.show({
         title: "Thất bại",
-        message: error?.message || "Đăng nhập thất bại",
+        message: error?.message || "Không thể gửi lời mời",
         color: "red",
         autoClose: 3000,
       });
@@ -101,11 +104,17 @@ const ShareModal: React.FC<ShareModalProps> = ({
       centered
       size="lg"
       radius="md"
+      zIndex={300}
       overlayProps={{ backgroundOpacity: 0.55, blur: 3 }}
       transitionProps={{ transition: "pop" }}
     >
       <div className="flex flex-col gap-6">
-        <form action="" onSubmit={form.onSubmit(handleSubmit)}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.onSubmit(handleSubmit)();
+          }}
+        >
           <div className="flex flex-col gap-2">
             <Text size="sm" fw={500} c="dimmed">
               Mời qua email

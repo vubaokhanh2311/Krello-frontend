@@ -6,6 +6,7 @@ import {
   Avatar,
   ScrollArea,
   Popover,
+  Badge,
 } from "@mantine/core";
 import {
   IconAlignLeft,
@@ -13,6 +14,7 @@ import {
   IconPlus,
   IconUser,
   IconCalendar,
+  IconTag,
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import type { Task } from "../../utils/mapApiCardToTask";
@@ -89,6 +91,16 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   }, [taskCommentsRaw]);
 
   const [dueDate, setDueDate] = useState<Date | null>(null);
+
+  const taskLabels = useMemo(() => {
+    if (!task?.labelIds || !labels) return [];
+    return labels.filter((label) => task.labelIds.includes(label.id));
+  }, [task?.labelIds, labels]);
+
+  const taskMembers = useMemo(() => {
+    if (!task?.members) return [];
+    return task.members;
+  }, [task?.members]);
 
   useEffect(() => {
     if (opened && boardId) {
@@ -175,6 +187,9 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     onUpdateTaskMembers(task.id, userId);
   };
 
+  const isOverdue = dueDate && dayjs(dueDate).isBefore(dayjs(), "day");
+  const isDueToday = dueDate && dayjs(dueDate).isSame(dayjs(), "day");
+
   return (
     <Modal
       opened={opened}
@@ -238,6 +253,84 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               <h2 className="text-2xl font-semibold text-gray-900 w-full">
                 {task.title}
               </h2>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-6">
+            {taskLabels.length > 0 && (
+              <div className="">
+                <div className="flex items-center gap-2 shrink-0 mb-3">
+                  <IconTag size={18} className="text-gray-700" />
+                  <h3 className="text-sm font-semibold text-gray-700">Nhãn</h3>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {taskLabels.map((label) => (
+                    <Badge
+                      key={label.id}
+                      color={label.color}
+                      size="lg"
+                      radius="sm"
+                    >
+                      {label.name}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {taskMembers.length > 0 && (
+              <div className="">
+                <div className=" flex items-center gap-2 shrink-0 mb-3">
+                  <IconUser size={18} className="text-gray-700" />
+                  <h3 className="text-sm font-semibold text-gray-700">
+                    Thành viên
+                  </h3>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {taskMembers.map((member) => (
+                    <div
+                      key={member.id}
+                      className="flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1"
+                    >
+                      <Avatar
+                        src={
+                          member.avatar
+                            ? `${import.meta.env.VITE_URL_API}${member.avatar}`
+                            : undefined
+                        }
+                        size="xs"
+                        color="blue"
+                      >
+                        {!member.avatar && member.name?.charAt(0).toUpperCase()}
+                      </Avatar>
+                      <span className="text-sm font-medium text-gray-700">
+                        {member.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {dueDate && (
+              <div className=" ">
+                <div className="flex items-center gap-2 shrink-0 mb-3">
+                  <IconCalendar size={18} className="text-gray-700" />
+                  <h3 className="text-sm font-semibold text-gray-700">
+                    Ngày hết hạn
+                  </h3>
+                </div>
+                <Badge
+                  size="lg"
+                  radius="sm"
+                  color={isOverdue ? "red" : isDueToday ? "yellow" : "gray"}
+                  variant="light"
+                >
+                  {dayjs(dueDate).format("DD/MM/YYYY")}
+                  {isOverdue && " - Quá hạn"}
+                  {isDueToday && " - Hôm nay"}
+                </Badge>
+              </div>
             )}
           </div>
 

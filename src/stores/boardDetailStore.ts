@@ -362,7 +362,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
         activeCard: updatedTask,
       }));
 
-      await putCard(colId, taskId, { title: newTitle });
+      await updateCard(colId, taskId, { title: newTitle });
 
       notifications.show({
         title: "Thành công",
@@ -398,7 +398,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
         activeCard: updatedTask,
       }));
 
-      await putCard(colId, taskId, { description: desc });
+      await updateCard(colId, taskId, { description: desc });
 
       notifications.show({
         title: "Thành công",

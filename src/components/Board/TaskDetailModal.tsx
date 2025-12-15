@@ -309,8 +309,11 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                   <Button
                     onClick={() => {
                       const newDesc = description.trim();
-                      if (newDesc !== task.description.trim())
+                      const oldDesc = (task.description ?? "").trim();
+
+                      if (newDesc !== oldDesc) {
                         onSaveDescription(task.id, newDesc);
+                      }
 
                       setIsEditingDesc(false);
                     }}

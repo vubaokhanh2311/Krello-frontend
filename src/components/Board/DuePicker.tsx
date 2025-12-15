@@ -9,26 +9,39 @@ interface DuePickerProps {
 }
 
 export default function DuePicker({ dueDate, onChange }: DuePickerProps) {
+  const getCurrentTime = () => dayjs().format("HH:mm");
+
   const [date, setDate] = useState<Date | null>(dueDate ?? null);
-  const [time, setTime] = useState(
-    dueDate ? dayjs(dueDate).format("HH:mm") : "17:00"
+  const [time, setTime] = useState<string>(
+    dueDate ? dayjs(dueDate).format("HH:mm") : getCurrentTime()
   );
 
   useEffect(() => {
     setDate(dueDate ?? null);
+
     if (dueDate) {
       setTime(dayjs(dueDate).format("HH:mm"));
+    } else {
+      setTime(getCurrentTime());
     }
   }, [dueDate]);
 
   const handleDateChange = (d: Date | null) => {
     setDate(d);
+
     if (!d) {
       onChange(null);
       return;
     }
 
-    const [h, m] = time.split(":").map(Number);
+    let selectedTime = time;
+
+    if (!date) {
+      selectedTime = getCurrentTime();
+      setTime(selectedTime);
+    }
+
+    const [h, m] = selectedTime.split(":").map(Number);
     onChange(dayjs(d).hour(h).minute(m).toDate());
   };
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useEffect, useCallback } from "react";
 import {
   DndContext,
   closestCenter,
@@ -15,67 +15,61 @@ import type {
 import { arrayMove } from "@dnd-kit/sortable";
 import { IconPlus, IconX, IconFilter, IconSettings } from "@tabler/icons-react";
 import { Avatar, Button } from "@mantine/core";
-import type { BoardData, Task, ColumnData } from "../../types/BoardDetail";
-import { notifications } from "@mantine/notifications";
+import type { Task } from "../../types/BoardDetail";
 import { SortableTask } from "../../components/Board/SortableTask";
 import { Column } from "../../components/Board/Colum";
 import ShareModal from "../../components/Board/ShareModal";
 import { useDisclosure } from "@mantine/hooks";
-import { getBoardMembers } from "../../api/MemberService";
 import { useParams } from "react-router-dom";
-import { mapApiToUiMember } from "../../utils/memberMapper";
-import { getBoardDetail } from "../../api/boardService";
-import type { BoardTS } from "../Board/BoardType";
-import { getList, createList, updateList } from "../../api/listService";
 import { TaskDetailModal } from "../../components/Board/TaskDetailModal";
-
-import { updateLabelTask, deleteLabelTask } from "../../api/labelService";
-import {
-  getCard,
-  createCard,
-  deleteCard,
-  putCard,
-  addCardMember,
-  removeCardMember,
-} from "../../api/cardService";
-import { mapApiCardToTask } from "../../utils/mapApiCardToTask";
-import type { Member } from "../../types/Member";
-import type { ApiColumn } from "../../types/BoardDetail";
-import type { Task as ApiCard } from "../../types/BoardDetail";
-
+import { putCard } from "../../api/cardService";
 import { useLabelStore } from "../../stores/labelStore";
-
-interface ApiListResponse {
-  data: ApiColumn[];
-}
-
-interface ApiCardResponse {
-  data: ApiCard[];
-}
+import { useBoardDetailStore } from "../../stores/boardDetailStore";
 
 export default function TaskFlowApp() {
-  const [data, setData] = useState<BoardData>({
-    tasks: {},
-    columns: {},
-    columnOrder: [],
-  });
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [overId, setOverId] = useState<string | null>(null);
-  const [boardDetail, setboardDetail] = useState<BoardTS>({} as BoardTS);
-
-  const [isCreatingColumn, setIsCreatingColumn] = useState(false);
-  const [newColumnTitle, setNewColumnTitle] = useState("");
-  const [opened, { open, close }] = useDisclosure(false);
-
-  const [activeCard, setactiveCard] = useState<Task | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const [members, setMembers] = useState<Member[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-
   const { id } = useParams<{ id: string }>();
+  const [opened, { open, close }] = useDisclosure(false);
+  
+  const {
+    data,
+    boardDetail,
+    members,
+    activeId,
+    overId,
+    isCreatingColumn,
+    newColumnTitle,
+    activeCard,
+    isModalOpen,
+    isLoading,
+    setActiveId,
+    setOverId,
+    setIsCreatingColumn,
+    setNewColumnTitle,
+    setActiveCard,
+    setIsModalOpen,
+    fetchBoardData,
+    addColumn,
+    updateColumnTitle,
+    addTaskToColumn,
+    deleteTask,
+    updateTaskTitle,
+    updateTaskDescription,
+    updateTaskLabels,
+    updateTaskMembers,
+    updateTaskDueDate,
+    moveTask,
+    getColumnIdByTask,
+    updateColumns,
+  } = useBoardDetailStore();
 
   const fetchLabels = useLabelStore((s) => s.fetchLabels);
+
+  useEffect(() => {
+    if (id) {
+      fetchBoardData(id);
+      fetchLabels(id).catch(() => {});
+    }
+  }, [id, fetchBoardData, fetchLabels]);
 
   useEffect(() => {
     if (isModalOpen && id) {
@@ -83,16 +77,10 @@ export default function TaskFlowApp() {
     }
   }, [isModalOpen, id, fetchLabels]);
 
-  useEffect(() => {
-    if (id) {
-      fetchLabels(id).catch(() => {});
-    }
-  }, [id, fetchLabels]);
-
   const handleTaskClick = useCallback((task: Task) => {
-    setactiveCard(task);
+    setActiveCard(task);
     setIsModalOpen(true);
-  }, []);
+  }, [setActiveCard, setIsModalOpen]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -132,13 +120,11 @@ export default function TaskFlowApp() {
 
       const newTaskIds = arrayMove(sourceCol.taskIds, oldIndex, newIndex);
 
-      setData((prev) => ({
-        ...prev,
-        columns: {
-          ...prev.columns,
-          [sourceColId]: { ...sourceCol, taskIds: newTaskIds },
-        },
-      }));
+      // Update local state
+      updateColumns({
+        ...data.columns,
+        [sourceColId]: { ...sourceCol, taskIds: newTaskIds },
+      });
 
       try {
         await putCard(sourceColId, cardId, {
@@ -158,20 +144,15 @@ export default function TaskFlowApp() {
     const insertIndex = overIndex >= 0 ? overIndex : newDestIds.length;
     newDestIds.splice(insertIndex, 0, cardId);
 
-    setData((prev) => ({
-      ...prev,
-      columns: {
-        ...prev.columns,
-        [sourceColId]: { ...sourceCol, taskIds: newSourceIds },
-        [destColId]: { ...destCol, taskIds: newDestIds },
-      },
-    }));
+    // Update local state
+    updateColumns({
+      ...data.columns,
+      [sourceColId]: { ...sourceCol, taskIds: newSourceIds },
+      [destColId]: { ...destCol, taskIds: newDestIds },
+    });
 
     try {
-      await putCard(destColId, cardId, {
-        listId: destColId,
-        taskOrder: newDestIds,
-      });
+      await moveTask(cardId, sourceColId, destColId, newDestIds);
     } catch (err) {
       console.error(err);
     }
@@ -179,235 +160,43 @@ export default function TaskFlowApp() {
 
   const handleDeleteTask = useCallback(
     async (colId: string, taskId: string) => {
-      try {
-        await deleteCard(colId, taskId);
-
-        const newColumns = { ...data.columns };
-        const newTasks = { ...data.tasks };
-
-        const col = newColumns[colId];
-        if (col) {
-          const index = col.taskIds.indexOf(taskId);
-          if (index !== -1) {
-            col.taskIds.splice(index, 1);
-          }
-        }
-
-        delete newTasks[taskId];
-        notifications.show({
-          title: "Thành công",
-          message: "Xóa thẻ thành công",
-          color: "green",
-          autoClose: 2000,
-        });
-
-        setData({ ...data, tasks: newTasks, columns: newColumns });
-      } catch (error) {
-        console.error("Error deleting task:", error);
-        notifications.show({
-          title: "Thất bại",
-          message: "Xóa thẻ thất bại",
-          color: "red",
-          autoClose: 2000,
-        });
-      }
+      await deleteTask(colId, taskId);
     },
-    [data]
+    [deleteTask]
   );
 
   const handleAddTaskToColumn = useCallback(
     async (colId: string, title: string) => {
-      try {
-        const resCard = await createCard(colId, { title });
-
-        const newTask: Task = mapApiCardToTask(resCard);
-
-        const taskId = newTask.id;
-        const col = data.columns[colId];
-        notifications.show({
-          title: "Thành công",
-          message: "Thêm thẻ thành công",
-          color: "green",
-          autoClose: 2000,
-        });
-        setData({
-          ...data,
-          tasks: { ...data.tasks, [taskId]: newTask },
-          columns: {
-            ...data.columns,
-            [colId]: {
-              ...col,
-              taskIds: [...col.taskIds, taskId],
-            },
-          },
-        });
-      } catch (error) {
-        notifications.show({
-          title: "Thất bại",
-          message: "Thêm thẻ thất bại",
-          color: "red",
-          autoClose: 2000,
-        });
-      }
+      await addTaskToColumn(colId, title);
     },
-    [data]
+    [addTaskToColumn]
   );
 
   const handleAddColumn = async () => {
-    if (!newColumnTitle.trim()) return;
-
-    try {
-      setIsCreatingColumn(false);
-
-      const newCol = await createList(id!, { title: newColumnTitle });
-
-      setData((prev) => ({
-        ...prev,
-        columns: {
-          ...prev.columns,
-          [newCol.id]: {
-            id: newCol.id,
-            title: newCol.title,
-            taskIds: [],
-          },
-        },
-        columnOrder: [...prev.columnOrder, newCol.id],
-      }));
-
-      setNewColumnTitle("");
-      notifications.show({
-        title: "Thành công",
-        message: "Thêm danh sách thành công",
-        color: "green",
-        autoClose: 2000,
-      });
-    } catch (error) {
-      notifications.show({
-        title: "Thất bại",
-        message: "Thêm danh sách thất bại",
-        color: "red",
-        autoClose: 2000,
-      });
-    }
+    if (!newColumnTitle.trim() || !id) return;
+    await addColumn(id, newColumnTitle);
   };
 
   const handleUpdateColumnTitle = useCallback(
     async (colId: string, newTitle: string) => {
-      if (!newTitle.trim()) return;
-
-      setData((prev) => ({
-        ...prev,
-        columns: {
-          ...prev.columns,
-          [colId]: {
-            ...prev.columns[colId],
-            title: newTitle,
-          },
-        },
-      }));
-
-      try {
-        await updateList(id, colId, { title: newTitle });
-        notifications.show({
-          title: "Thành công",
-          message: "Cập nhật tiêu đề thành công",
-          color: "green",
-          autoClose: 2000,
-        });
-      } catch (error) {
-        notifications.show({
-          title: "Thất bại",
-          message: "Cập nhật tiêu đề thất bại",
-          color: "red",
-          autoClose: 2000,
-        });
-      }
+      if (!id) return;
+      await updateColumnTitle(id, colId, newTitle);
     },
-    [id]
-  );
-
-  const getColumnIdByTask = useCallback(
-    (taskId: string) => {
-      return Object.keys(data.columns).find((key) =>
-        data.columns[key].taskIds.includes(taskId)
-      );
-    },
-    [data.columns]
+    [id, updateColumnTitle]
   );
 
   const handleSaveTaskTitle = useCallback(
     async (taskId: string, newTitle: string) => {
-      try {
-        const colId = getColumnIdByTask(taskId);
-        if (!colId) return;
-
-        const updatedTask = {
-          ...data.tasks[taskId],
-          title: newTitle,
-        };
-
-        setData((prev) => ({
-          ...prev,
-          tasks: {
-            ...prev.tasks,
-            [taskId]: updatedTask,
-          },
-        }));
-
-        setactiveCard(updatedTask);
-
-        await putCard(colId, taskId, { title: newTitle });
-
-        notifications.show({
-          title: "Thành công",
-          message: "Đã cập nhật tiêu đề",
-          color: "green",
-        });
-      } catch (error) {
-        console.error(error);
-        notifications.show({
-          title: "Lỗi",
-          message: "Không thể lưu tiêu đề",
-          color: "red",
-        });
-      }
+      await updateTaskTitle(taskId, newTitle);
     },
-    [data.tasks, getColumnIdByTask]
+    [updateTaskTitle]
   );
 
   const handleSaveTaskDescription = useCallback(
     async (taskId: string, desc: string) => {
-      try {
-        const colId = getColumnIdByTask(taskId);
-        if (!colId) return;
-
-        const updatedTask = { ...data.tasks[taskId], description: desc };
-        setData((prev) => ({
-          ...prev,
-          tasks: {
-            ...prev.tasks,
-            [taskId]: updatedTask,
-          },
-        }));
-        setactiveCard(updatedTask);
-
-        await putCard(colId, taskId, { description: desc });
-
-        notifications.show({
-          title: "Thành công",
-          message: "Đã cập nhật mô tả",
-          color: "green",
-        });
-      } catch (error) {
-        console.error(error);
-        notifications.show({
-          title: "Lỗi",
-          message: "Không thể lưu mô tả",
-          color: "red",
-        });
-      }
+      await updateTaskDescription(taskId, desc);
     },
-    [data.tasks, getColumnIdByTask]
+    [updateTaskDescription]
   );
 
   const handleModalDeleteTask = useCallback(
@@ -418,176 +207,34 @@ export default function TaskFlowApp() {
       handleDeleteTask(colId, taskId);
       setIsModalOpen(false);
     },
-    [getColumnIdByTask, handleDeleteTask]
+    [getColumnIdByTask, handleDeleteTask, setIsModalOpen]
   );
 
-  const handleUpdateTaskLabels = async (taskId: string, labelId: string) => {
-    const task = data.tasks[taskId];
-    if (!task) return;
+  const handleUpdateTaskLabels = useCallback(
+    async (taskId: string, labelId: string) => {
+      await updateTaskLabels(taskId, labelId);
+    },
+    [updateTaskLabels]
+  );
 
-    const hasLabel = task.labelIds.includes(labelId);
-    const newLabelIds = hasLabel
-      ? task.labelIds.filter((id) => id !== labelId)
-      : [...task.labelIds, labelId];
+  const handleSaveTaskDueDate = useCallback(
+    async (taskId: string, dueDate: string | Date | null) => {
+      await updateTaskDueDate(taskId, dueDate);
+    },
+    [updateTaskDueDate]
+  );
 
-    try {
-      setData((prev) => ({
-        ...prev,
-        tasks: {
-          ...prev.tasks,
-          [taskId]: { ...prev.tasks[taskId], labelIds: newLabelIds },
-        },
-      }));
-
-      setactiveCard((prev) =>
-        prev && prev.id === taskId ? { ...prev, labelIds: newLabelIds } : prev
-      );
-
-      if (hasLabel) {
-        await deleteLabelTask(taskId, labelId);
-      } else {
-        await updateLabelTask(taskId, { labelId });
-      }
-    } catch (err) {
-      console.error("Error toggling label:", err);
-
-      setData((prev) => ({
-        ...prev,
-        tasks: {
-          ...prev.tasks,
-          [taskId]: { ...prev.tasks[taskId], labelIds: task.labelIds },
-        },
-      }));
-      setactiveCard((prev) =>
-        prev && prev.id === taskId ? { ...prev, labelIds: task.labelIds } : prev
-      );
-    }
-  };
-
-  const handleUpdateTaskMembers = async (taskId: string, userId: string) => {
-    const task = data.tasks[taskId];
-    if (!task) return;
-
-    const existingMember = task.members.find((m) => m.id === userId);
-    const member = members.find((m) => m.id === userId);
-
-    try {
-      if (existingMember) {
-        await removeCardMember(taskId, userId);
-        const newMembers = task.members.filter((m) => m.id !== userId);
-        setData((prev) => ({
-          ...prev,
-          tasks: {
-            ...prev.tasks,
-            [taskId]: { ...prev.tasks[taskId], members: newMembers },
-          },
-        }));
-        setactiveCard((prev) =>
-          prev && prev.id === taskId ? { ...prev, members: newMembers } : prev
-        );
-      } else {
-        if (!member) return;
-        await addCardMember(taskId, { userId });
-
-        const newMember = {
-          id: member.id,
-          name: member.name,
-          avatar: member.avatar,
-        };
-        const newMembers = [...task.members, newMember];
-        setData((prev) => ({
-          ...prev,
-          tasks: {
-            ...prev.tasks,
-            [taskId]: { ...prev.tasks[taskId], members: newMembers },
-          },
-        }));
-        setactiveCard((prev) =>
-          prev && prev.id === taskId ? { ...prev, members: newMembers } : prev
-        );
-      }
-    } catch (err: any) {
-      console.error("Error toggling member:", err);
-      notifications.show({
-        title: "Lỗi",
-        message: err?.message || "Không thể cập nhật thành viên",
-        color: "red",
-      });
-    }
-  };
+  const handleUpdateTaskMembers = useCallback(
+    async (taskId: string, userId: string) => {
+      await updateTaskMembers(taskId, userId);
+    },
+    [updateTaskMembers]
+  );
 
   const activeTask = activeId ? data.tasks[activeId] : null;
-  const background = boardDetail.background;
+  const background = boardDetail?.background || "";
 
   const isUrl = typeof background === "string" && background.startsWith("http");
-
-  useEffect(() => {
-    const fetchBoardInfo = async () => {
-      try {
-        setIsLoading(true);
-
-        const apiData = await getBoardMembers(id);
-        const uiData = apiData.map(mapApiToUiMember);
-        setMembers(uiData);
-
-        const resBoard = await getBoardDetail(id);
-        setboardDetail(resBoard);
-
-        const resList = (await getList(id)) as ApiListResponse;
-        const sortedColumns = resList.data.sort(
-          (a, b) => a.position - b.position
-        );
-
-        const apiColumns: Record<string, ColumnData> = {};
-        const apiColumnOrder: string[] = [];
-
-        sortedColumns.forEach((col) => {
-          apiColumns[col.id] = {
-            id: col.id,
-            title: col.title,
-            taskIds: [],
-          };
-          apiColumnOrder.push(col.id);
-        });
-
-        const tasks: Record<string, Task> = {};
-
-        const cardPromises = sortedColumns.map((col: ApiColumn) =>
-          getCard(col.id)
-        );
-        const cardsResults = (await Promise.all(
-          cardPromises
-        )) as ApiCardResponse[];
-
-        cardsResults.forEach((resCard, index) => {
-          const col = sortedColumns[index];
-
-          resCard.data.forEach((card: ApiCard) => {
-            const task = mapApiCardToTask(card);
-            tasks[task.id] = task;
-            apiColumns[col.id].taskIds.push(task.id);
-          });
-        });
-
-        setData({
-          tasks,
-          columns: apiColumns,
-          columnOrder: apiColumnOrder,
-        });
-      } catch (error) {
-        notifications.show({
-          title: "Thất bại",
-          message: "Không thể tải dữ liệu board",
-          color: "red",
-          autoClose: 3000,
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchBoardInfo();
-  }, [opened, id]);
 
   return (
     <div
@@ -602,7 +249,7 @@ export default function TaskFlowApp() {
         <div className="flex items-center gap-4 w-full md:w-auto">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-white leading-none">
-              {boardDetail.name}
+              {boardDetail?.name || ""}
             </h1>
           </div>
         </div>
@@ -647,7 +294,11 @@ export default function TaskFlowApp() {
 
           <Button
             leftSection={<IconPlus size={16} />}
-            onClick={open}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              open();
+            }}
             variant="gradient"
             className="bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20 h-8 px-4 text-sm font-medium border-0"
           >
@@ -763,6 +414,7 @@ export default function TaskFlowApp() {
         onSaveDescription={handleSaveTaskDescription}
         onUpdateTaskLabels={handleUpdateTaskLabels}
         onUpdateTaskMembers={handleUpdateTaskMembers}
+        onSaveDueDate={handleSaveTaskDueDate}
         onDeleteTask={handleModalDeleteTask}
       />
     </div>

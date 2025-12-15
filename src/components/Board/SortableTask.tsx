@@ -74,10 +74,37 @@ export const SortableTask: React.FC<SortableTaskProps> = ({
       <p className="text-gray-800 font-medium text-sm mb-2">{task.title}</p>
 
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1 text-gray-500">
-          <IconCalendar size={14} />
-          <span className="text-xs">{task.date}</span>
-        </div>
+        {task.date && (
+          <div
+            className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded ${(() => {
+              const dueDate = new Date(task.date);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              dueDate.setHours(0, 0, 0, 0);
+              const diffTime = dueDate.getTime() - today.getTime();
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+              if (diffDays < 0) {
+                return "bg-red-100 text-red-700";
+              } else if (diffDays === 0) {
+                return "bg-orange-100 text-orange-700";
+              } else if (diffDays <= 3) {
+                return "bg-yellow-100 text-yellow-700";
+              } else {
+                return "bg-blue-100 text-blue-700";
+              }
+            })()}`}
+          >
+            <IconCalendar size={14} />
+            <span>
+              {new Date(task.date).toLocaleDateString("vi-VN", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              })}
+            </span>
+          </div>
+        )}
 
         <div className="flex items-center gap-2">
           <div className="flex -space-x-1">

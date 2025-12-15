@@ -1,41 +1,15 @@
 import BoardCard from "../../components/Board/BoardCard";
-import { useEffect, useState } from "react";
-
-import { notifications } from "@mantine/notifications";
-import { getBoard, getBoardsJoinedByUser } from "../../api/boardService";
-
-import type { BoardTS } from "./BoardType";
+import { useEffect } from "react";
+import { useBoardStore } from "../../stores/boardStore";
 
 export default function BoardsPage() {
-  const [boards, setBoards] = useState<BoardTS[]>([]);
-  const [boardsJoined, setBoardsJoined] = useState<BoardTS[]>([]);
-
-  const [loading, setLoading] = useState(true);
-
-  const fetchBoards = async () => {
-    try {
-      const res = await getBoard();
-      setBoards(res.data);
-
-      const resBoardsJoined = await getBoardsJoinedByUser();
-      setBoardsJoined(resBoardsJoined);
-    } catch (error: any) {
-      notifications.show({
-        title: "Thất bại",
-        message: error?.message || "Kết nối sever thất bại",
-        color: "red",
-        autoClose: 3000,
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { boards, boardsJoined, isLoading, fetchBoards } = useBoardStore();
 
   useEffect(() => {
     fetchBoards();
-  }, []);
+  }, [fetchBoards]);
 
-  if (loading)
+  if (isLoading)
     return (
       <div className="flex flex-col justify-center items-center h-screen gap-4">
         <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>

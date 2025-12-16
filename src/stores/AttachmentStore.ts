@@ -114,7 +114,6 @@ export const useAttachmentStore = create<AttachmentStore>((set, get) => ({
       (a) => a.id === attachmentId
     );
 
-    // 🔹 Optimistic update
     if (attachmentToUpdate) {
       set((state) => ({
         attachments: {
@@ -123,7 +122,7 @@ export const useAttachmentStore = create<AttachmentStore>((set, get) => ({
             a.id === attachmentId
               ? {
                   ...a,
-                  fileName: trimmedName, // ✅ ĐÚNG FIELD
+                  fileName: trimmedName,
                   updatedAt: new Date().toISOString(),
                 }
               : a
@@ -133,11 +132,9 @@ export const useAttachmentStore = create<AttachmentStore>((set, get) => ({
     }
 
     try {
-      // 🔹 GỌI API ĐÚNG PAYLOAD
       const res = await updateAttachment(cardId, attachmentId, trimmedName);
       const updatedAttachment = res.data ?? res;
 
-      // 🔹 Sync lại theo response backend
       set((state) => ({
         attachments: {
           ...state.attachments,
@@ -154,7 +151,6 @@ export const useAttachmentStore = create<AttachmentStore>((set, get) => ({
         autoClose: 2000,
       });
     } catch (error) {
-      // 🔹 Rollback nếu lỗi
       if (attachmentToUpdate) {
         set((state) => ({
           attachments: {

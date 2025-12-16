@@ -497,20 +497,26 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                     </div>
                     <Popover
                       opened={editingAttachmentId === attachment.id}
-                      onClose={cancelEditingAttachment}
-                      position="bottom-start"
+                      onChange={(opened) => {
+                        if (!opened) {
+                          cancelEditingAttachment();
+                        }
+                      }}
+                      position="bottom-end"
                       shadow="md"
                       width={280}
                       withinPortal
-                      closeOnClickOutside
-                      closeOnEscape
+                      clickOutsideEvents={["mousedown", "touchstart"]}
                     >
                       <Popover.Target>
                         <button
                           type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            startEditingAttachment(attachment);
+                          onClick={() => {
+                            if (editingAttachmentId === attachment.id) {
+                              cancelEditingAttachment();
+                            } else {
+                              startEditingAttachment(attachment);
+                            }
                           }}
                           className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
                           title="Sửa tên"
@@ -519,10 +525,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                         </button>
                       </Popover.Target>
 
-                      <Popover.Dropdown
-                        onClick={(e) => e.stopPropagation()}
-                        className="p-3 rounded-lg border border-gray-200 bg-white"
-                      >
+                      <Popover.Dropdown className="p-3 rounded-lg border border-gray-200 bg-white">
                         <div className="space-y-3">
                           <h4 className="text-sm font-semibold text-gray-800">
                             Sửa tệp đính kèm
@@ -530,16 +533,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 
                           <input
                             autoFocus
-                            className="
-          w-full
-          rounded-md
-          border border-gray-300
-          px-3 py-2
-          text-sm
-          focus:outline-none
-          focus:ring-2
-          focus:ring-blue-500
-        "
+                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             value={editingAttachmentName}
                             onChange={(e) =>
                               setEditingAttachmentName(e.target.value)

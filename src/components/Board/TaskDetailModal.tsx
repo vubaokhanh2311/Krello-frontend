@@ -7,6 +7,7 @@ import {
   ScrollArea,
   Popover,
   Badge,
+  FileButton,
 } from "@mantine/core";
 import {
   IconAlignLeft,
@@ -15,6 +16,12 @@ import {
   IconUser,
   IconCalendar,
   IconTag,
+  IconPaperclip,
+  IconDownload,
+  IconTrash,
+  IconEdit,
+  IconX,
+  IconCheck,
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import type { Task } from "../../utils/mapApiCardToTask";
@@ -25,8 +32,8 @@ import DuePicker from "./DuePicker";
 import { useLabelStore } from "../../stores/labelStore";
 import { useUserStore } from "../../stores/userStore";
 import { useCommentStore } from "../../stores/commentStore";
+import { useAttachmentStore } from "../../stores/AttachmentStore";
 import type { Comment } from "../../types/Comment";
-import { IconTrash, IconEdit, IconX, IconCheck } from "@tabler/icons-react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/vi";
@@ -72,6 +79,11 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentText, setEditingCommentText] = useState("");
 
+  const [editingAttachmentId, setEditingAttachmentId] = useState<string | null>(
+    null
+  );
+  const [editingAttachmentName, setEditingAttachmentName] = useState("");
+
   const labels = useLabelStore((s) => s.labels);
   const fetchLabels = useLabelStore((s) => s.fetchLabels);
   const user = useUserStore((s) => s.user);
@@ -85,16 +97,34 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   const updateComment = useCommentStore((s) => s.updateComment);
   const deleteComment = useCommentStore((s) => s.deleteComment);
 
+  const taskAttachmentsRaw = useAttachmentStore((state) =>
+    task?.id ? state.attachments[task.id] : undefined
+  );
+
+  const fetchAttachments = useAttachmentStore((s) => s.fetchAttachments);
+  const addAttachment = useAttachmentStore((s) => s.addAttachment);
+  const updateAttachment = useAttachmentStore((s) => s.updateAttachment);
+  const deleteAttachment = useAttachmentStore((s) => s.deleteAttachment);
+
   const taskComments = useMemo(() => {
     if (!taskCommentsRaw) return [];
     return taskCommentsRaw.filter((c) => c && c.user);
   }, [taskCommentsRaw]);
 
+  const taskAttachments = useMemo(() => {
+    if (!taskAttachmentsRaw) return [];
+    return taskAttachmentsRaw;
+  }, [taskAttachmentsRaw]);
+
   const [dueDate, setDueDate] = useState<Date | null>(null);
 
   const taskLabels = useMemo(() => {
-    if (!task?.labelIds || !labels) return [];
-    return labels.filter((label) => task.labelIds.includes(label.id));
+    if (!task?.labelIds?.length || !Array.isArray(labels)) return [];
+
+    return labels.filter(
+      (label): label is { id: string } =>
+        Boolean(label) && task.labelIds.includes(label.id)
+    );
   }, [task?.labelIds, labels]);
 
   const taskMembers = useMemo(() => {
@@ -126,8 +156,9 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         setDueDate(null);
       }
       fetchComments(task.id);
+      fetchAttachments(task.id);
     }
-  }, [task, fetchComments]);
+  }, [task, fetchComments, fetchAttachments]);
 
   const handleAddComment = async () => {
     if (!commentText.trim() || !task) return;
@@ -165,6 +196,48 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     } catch (error) {
       console.error("Error deleting comment:", error);
     }
+  };
+
+  const handleFileUpload = async (file: File) => {
+    if (!task) return;
+    try {
+      await addAttachment(task.id, file);
+    } catch (error) {
+      console.error("Error uploading file:", error);
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    if (!task) return;
+    try {
+      await deleteAttachment(task.id, attachmentId);
+    } catch (error) {
+      console.error("Error deleting attachment:", error);
+    }
+  };
+
+  const startEditingAttachment = (attachment: any) => {
+    setEditingAttachmentId(attachment.id);
+    setEditingAttachmentName(
+      attachment.fileName || attachment.fileUrl?.split("/").pop() || ""
+    );
+  };
+
+  const handleUpdateAttachment = async () => {
+    if (!editingAttachmentId || !editingAttachmentName.trim() || !task) return;
+
+    await updateAttachment(
+      task.id,
+      editingAttachmentId,
+      editingAttachmentName.trim()
+    );
+
+    cancelEditingAttachment();
+  };
+
+  const cancelEditingAttachment = () => {
+    setEditingAttachmentId(null);
+    setEditingAttachmentName("");
   };
 
   const startEditing = (comment: Comment) => {
@@ -382,7 +455,146 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 />
               </Popover.Dropdown>
             </Popover>
+
+            <FileButton onChange={handleFileUpload} accept="*">
+              {(props) => (
+                <Button {...props} leftSection={<IconPaperclip size={16} />}>
+                  Đính kèm
+                </Button>
+              )}
+            </FileButton>
           </div>
+
+          {taskAttachments.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <IconPaperclip size={20} className="text-gray-700" />
+                <h2 className="text-sm font-semibold text-gray-800">
+                  Tệp đính kèm
+                </h2>
+              </div>
+              <div className="space-y-2">
+                {taskAttachments.map((attachment) => (
+                  <div
+                    key={attachment.id}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <IconPaperclip
+                        size={18}
+                        className="text-gray-500 shrink-0"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {attachment.fileName ||
+                            attachment.fileUrl?.split("/").pop()}
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                          <span>•</span>
+                          <span>{dayjs(attachment.createdAt).fromNow()}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <Popover
+                      opened={editingAttachmentId === attachment.id}
+                      onClose={cancelEditingAttachment}
+                      position="bottom-start"
+                      shadow="md"
+                      width={280}
+                      withinPortal
+                      closeOnClickOutside
+                      closeOnEscape
+                    >
+                      <Popover.Target>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startEditingAttachment(attachment);
+                          }}
+                          className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
+                          title="Sửa tên"
+                        >
+                          <IconEdit size={16} />
+                        </button>
+                      </Popover.Target>
+
+                      <Popover.Dropdown
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-3 rounded-lg border border-gray-200 bg-white"
+                      >
+                        <div className="space-y-3">
+                          <h4 className="text-sm font-semibold text-gray-800">
+                            Sửa tệp đính kèm
+                          </h4>
+
+                          <input
+                            autoFocus
+                            className="
+          w-full
+          rounded-md
+          border border-gray-300
+          px-3 py-2
+          text-sm
+          focus:outline-none
+          focus:ring-2
+          focus:ring-blue-500
+        "
+                            value={editingAttachmentName}
+                            onChange={(e) =>
+                              setEditingAttachmentName(e.target.value)
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleUpdateAttachment();
+                              if (e.key === "Escape") cancelEditingAttachment();
+                            }}
+                          />
+
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              size="xs"
+                              variant="subtle"
+                              onClick={cancelEditingAttachment}
+                            >
+                              Hủy
+                            </Button>
+                            <Button
+                              size="xs"
+                              onClick={handleUpdateAttachment}
+                              disabled={!editingAttachmentName.trim()}
+                            >
+                              Lưu
+                            </Button>
+                          </div>
+                        </div>
+                      </Popover.Dropdown>
+                    </Popover>
+                    <div className="flex items-center gap-1 ml-2">
+                      <a
+                        href={`${import.meta.env.VITE_URL_API}${
+                          attachment.fileUrl
+                        }`}
+                        download
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
+                        title="Tải xuống"
+                      >
+                        <IconDownload size={16} />
+                      </a>
+                      <button
+                        onClick={() => handleDeleteAttachment(attachment.id)}
+                        className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded"
+                        title="Xóa"
+                      >
+                        <IconTrash size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -391,7 +603,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             </div>
 
             {isEditingDesc ? (
-              <div className="space-y-3">
+              <div className="space-y-3 ">
                 <Textarea
                   minRows={4}
                   autosize
@@ -428,7 +640,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             ) : (
               <div
                 onClick={() => setIsEditingDesc(true)}
-                className="rounded-lg p-4 text-gray-700 cursor-text hover:bg-gray-50 whitespace-pre-line"
+                className="rounded-lg p-4 text-gray-700 cursor-text hover:bg-gray-50 whitespace-pre-line border border-gray-300"
               >
                 {description?.trim()
                   ? description

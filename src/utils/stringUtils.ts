@@ -11,3 +11,10 @@ export function includesIgnoreCase(
 export function normalizeKeyword(keyword: string): string {
   return keyword.toLowerCase().trim();
 }
+
+
+
+
+
+
+

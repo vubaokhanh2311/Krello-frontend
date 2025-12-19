@@ -79,8 +79,6 @@ interface BoardDetailStore {
     newTaskIds: string[]
   ) => Promise<void>;
 
-  getColumnIdByTask: (taskId: string) => string | undefined;
-
   reset: () => void;
 }
 

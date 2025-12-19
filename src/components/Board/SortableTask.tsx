@@ -24,7 +24,7 @@ export const SortableTask: React.FC<SortableTaskProps> = ({
     useSortable({ id: task.id });
 
   const storeLabels = useLabelStore((s) => s.labels);
-  const taskLabels = task.labelIds
+  const taskLabels = (task.labelIds ?? [])
     .map((id) => storeLabels.find((l) => l?.id === id))
     .filter((l): l is Label => l !== undefined)
     .map(({ id, name, color }) => ({ id, name, color }));
@@ -108,7 +108,7 @@ export const SortableTask: React.FC<SortableTaskProps> = ({
 
         <div className="flex items-center gap-2">
           <div className="flex -space-x-1">
-            {task.tags.map((tag, i) => (
+            {(task.tags ?? []).map((tag, i) => (
               <div
                 key={i}
                 className="w-2.5 h-2.5 rounded-full border-2 border-white"
@@ -119,7 +119,7 @@ export const SortableTask: React.FC<SortableTaskProps> = ({
 
           <div className="flex -space-x-2">
             <Avatar.Group>
-              {task.members.map((member) =>
+              {(task.members ?? []).map((member) =>
                 member.avatar ? (
                   <Avatar
                     key={member.id}

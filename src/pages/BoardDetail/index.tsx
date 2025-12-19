@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect, useCallback, useMemo } from "react";
 import {
   DndContext,
   closestCenter,
@@ -25,11 +25,12 @@ import { TaskDetailModal } from "../../components/Board/TaskDetailModal";
 import { putCard } from "../../api/cardService";
 import { useLabelStore } from "../../stores/labelStore";
 import { useBoardDetailStore } from "../../stores/boardDetailStore";
+import { useBoardSocket } from "../../hooks/useBoardSocket";
 
 export default function TaskFlowApp() {
   const { id } = useParams<{ id: string }>();
   const [opened, { open, close }] = useDisclosure(false);
-  
+
   const {
     data,
     boardDetail,
@@ -62,7 +63,22 @@ export default function TaskFlowApp() {
     updateColumns,
   } = useBoardDetailStore();
 
+  useBoardSocket(id || "");
   const fetchLabels = useLabelStore((s) => s.fetchLabels);
+
+  const currentActiveTask = useMemo(() => {
+    if (!activeCard?.id) return null;
+
+    return data.tasks[activeCard.id] || activeCard;
+  }, [activeCard?.id, data.tasks]);
+
+  const activeColumnTitle = useMemo(() => {
+    if (!currentActiveTask) return "";
+    const column = Object.values(data.columns).find((col) =>
+      col.taskIds.includes(currentActiveTask.id)
+    );
+    return column?.title || "";
+  }, [currentActiveTask, data.columns]);
 
   useEffect(() => {
     if (id) {
@@ -77,10 +93,13 @@ export default function TaskFlowApp() {
     }
   }, [isModalOpen, id, fetchLabels]);
 
-  const handleTaskClick = useCallback((task: Task) => {
-    setActiveCard(task);
-    setIsModalOpen(true);
-  }, [setActiveCard, setIsModalOpen]);
+  const handleTaskClick = useCallback(
+    (task: Task) => {
+      setActiveCard(task);
+      setIsModalOpen(true);
+    },
+    [setActiveCard, setIsModalOpen]
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -328,7 +347,10 @@ export default function TaskFlowApp() {
           >
             {data.columnOrder.map((colId) => {
               const col = data.columns[colId];
-              const tasks = col.taskIds.map((taskId) => data.tasks[taskId]);
+
+              const tasks = col.taskIds
+                .map((taskId) => data.tasks[taskId])
+                .filter((task): task is Task => task !== undefined);
               return (
                 <Column
                   key={colId}
@@ -401,14 +423,8 @@ export default function TaskFlowApp() {
         opened={isModalOpen}
         boardId={id!}
         onClose={() => setIsModalOpen(false)}
-        task={activeCard}
-        columnTitle={
-          activeCard
-            ? Object.values(data.columns).find((col) =>
-                col.taskIds.includes(activeCard.id)
-              )?.title
-            : ""
-        }
+        task={currentActiveTask}
+        columnTitle={activeColumnTitle}
         boardMembers={members}
         onSaveTitle={handleSaveTaskTitle}
         onSaveDescription={handleSaveTaskDescription}

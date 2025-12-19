@@ -99,27 +99,30 @@ export const Column: React.FC<ColumnProps> = ({
           items={column.taskIds}
           strategy={verticalListSortingStrategy}
         >
-          {tasks.map((task) => {
-            const isOverTask = overId === task.id;
-            const isDraggingTask = activeId === task.id;
+          {tasks
+            .filter((task) => task)
+            .map((task, index) => {
+              const isOverTask = overId === task.id;
+              const isDraggingTask = activeId === task.id;
 
-            return (
-              <React.Fragment key={task.id}>
-                {isOverTask && (
-                  <div className="p-4 mb-2 rounded-lg border-2 border-dashed border-blue-400 bg-blue-100 min-h-[60px] transition-all duration-200" />
-                )}
+              const uniqueKey = `${column.id}-${task.id}-${index}`;
 
-                {!isDraggingTask && (
-                  <SortableTask
-                    key={task.id}
-                    task={task}
-                    onDelete={() => onDeleteTask(column.id, task.id)}
-                    onClick={() => onTaskClick(task)}
-                  />
-                )}
-              </React.Fragment>
-            );
-          })}
+              return (
+                <React.Fragment key={uniqueKey}>
+                  {isOverTask && !isDraggingTask && (
+                    <div className="p-4 mb-2 rounded-lg border-2 border-dashed border-blue-400 bg-blue-100 min-h-[60px] transition-all duration-200" />
+                  )}
+
+                  {!isDraggingTask && (
+                    <SortableTask
+                      task={task}
+                      onDelete={() => onDeleteTask(column.id, task.id)}
+                      onClick={() => onTaskClick(task)}
+                    />
+                  )}
+                </React.Fragment>
+              );
+            })}
         </SortableContext>
 
         {isOver && column.taskIds.length === 0 && (

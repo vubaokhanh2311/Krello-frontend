@@ -5,8 +5,11 @@ import { publicRoute, privateRoute } from "./routes";
 import { DefaultLayout } from "./components/Layout";
 import RequireAuth from "./middleware/RequireAuth";
 import NotFound from "./pages/NotFound";
+import { useGlobalSocket } from "./hooks/useGlobalSocket";
 
 function App() {
+  useGlobalSocket();
+
   return (
     <Router>
       <Routes>

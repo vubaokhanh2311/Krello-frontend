@@ -44,7 +44,6 @@ export const useBoardSocket = (boardId: string) => {
       fetchComments(cardId)
     );
 
-    // ===== ATTACHMENT EVENTS =====
     socketService.on<{ cardId: string }>("attachment:added", ({ cardId }) =>
       fetchAttachments(cardId)
     );
@@ -52,12 +51,10 @@ export const useBoardSocket = (boardId: string) => {
       fetchAttachments(cardId)
     );
 
-    // ===== LABEL (BOARD) EVENTS =====
     socketService.on("label:created", () => fetchLabels(boardId));
     socketService.on("label:updated", () => fetchLabels(boardId));
     socketService.on("label:deleted", () => fetchLabels(boardId));
 
-    // ===== BOARD EVENTS =====
     socketService.on("board:updated", () => fetchBoardData(boardId));
     socketService.on("board:member:added", () => fetchBoardData(boardId));
     socketService.on("board:member:removed", () => fetchBoardData(boardId));
@@ -65,7 +62,6 @@ export const useBoardSocket = (boardId: string) => {
       fetchBoardData(boardId)
     );
 
-    // ===== CLEANUP =====
     return () => {
       console.log("🔴 Socket leaving board:", boardId);
       socketService.leaveBoard(boardId);

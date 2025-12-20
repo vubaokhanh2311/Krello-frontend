@@ -12,6 +12,7 @@ export interface UserState {
   user: UserProfile | null;
   accessToken: string | null;
   refreshToken: string | null;
+  updateUser: (user: UserProfile | null) => void;
   setUser: (
     user: UserProfile,
     accessToken: string,

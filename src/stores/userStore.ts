@@ -11,6 +11,7 @@ export const useUserStore = create<UserState>()(
       refreshToken: null,
       setUser: (user, accessToken, refreshToken) =>
         set({ user, accessToken, refreshToken }),
+      updateUser: (user) => set((state) => ({ ...state, user })),
       clearUser: () =>
         set({ user: null, accessToken: null, refreshToken: null }),
     }),

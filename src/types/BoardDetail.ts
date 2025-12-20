@@ -37,5 +37,31 @@ export interface Label {
   id: string;
   name: string;
   color: string;
-  boardId: string;
+  boardId?: string;
+}
+
+export interface ApiLabel {
+  id: string;
+  label?: {
+    id?: string;
+    name?: string;
+    color?: string;
+  };
+}
+
+export interface ApiMember {
+  user?: {
+    id?: string;
+    name?: string;
+    avatarUrl?: string;
+  };
+}
+
+export interface ApiCard {
+  id: string;
+  title?: string;
+  dueDate?: string;
+  description?: string;
+  labels?: ApiLabel[];
+  members?: ApiMember[];
 }

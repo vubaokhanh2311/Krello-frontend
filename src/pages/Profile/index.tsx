@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   IconUser,
   IconMail,
@@ -47,6 +47,8 @@ export default function Profile() {
   }, [user]);
 
   const handleSave = async (values: typeof form.values) => {
+    if (!user) return;
+
     try {
       await updateProfile(values);
 
@@ -72,6 +74,8 @@ export default function Profile() {
   };
 
   const handleFileChange = async (file: File) => {
+    if (!user) return;
+
     try {
       const data = await updateAvatar(file);
       setUser({ ...user, avatarUrl: data.avatarUrl });
@@ -91,6 +95,7 @@ export default function Profile() {
   };
   const avatarSrc = resolveAvatarUrl(user.avatarUrl);
   if (!user) return null;
+
   return (
     <div className="min-h-screen bg-gray-100 p-8 md:p-6 font-sans antialiased text-gray-900">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -202,7 +207,7 @@ export default function Profile() {
                       Chỉnh sửa
                     </Button>
                   ) : (
-                    <Group spacing="sm">
+                    <Group gap="sm">
                       <Button
                         variant="light"
                         color="gray"

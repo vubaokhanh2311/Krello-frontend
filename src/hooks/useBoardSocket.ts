@@ -1,97 +1,88 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import socketService from "../service/socket.service";
 import { useBoardDetailStore } from "../stores/boardDetailStore";
 import { useCommentStore } from "../stores/commentStore";
 import { useAttachmentStore } from "../stores/AttachmentStore";
 import { useLabelStore } from "../stores/labelStore";
+import { debounce } from "lodash";
+import {
+  CARD_EVENTS,
+  LIST_EVENTS,
+  BOARD_EVENTS,
+} from "../constants/socket-events.constants";
 
 export const useBoardSocket = (boardId: string) => {
-  const { fetchBoardData } = useBoardDetailStore();
-
+  const fetchBoardData = useBoardDetailStore((s) => s.fetchBoardData);
   const fetchComments = useCommentStore((s) => s.fetchComments);
   const fetchAttachments = useAttachmentStore((s) => s.fetchAttachments);
   const fetchLabels = useLabelStore((s) => s.fetchLabels);
 
+  const refreshCard = useMemo(
+    () => debounce(() => fetchBoardData(boardId), 150),
+    [boardId, fetchBoardData]
+  );
+
+  const refreshList = useMemo(
+    () => debounce(() => fetchBoardData(boardId), 300),
+    [boardId, fetchBoardData]
+  );
+
   useEffect(() => {
     if (!boardId) return;
 
-    socketService.connect();
     socketService.joinBoard(boardId);
 
-    socketService.on("card:created", () => fetchBoardData(boardId));
-    socketService.on("card:updated", () => fetchBoardData(boardId));
-    socketService.on("card:deleted", () => fetchBoardData(boardId));
-    socketService.on("card:moved", () => fetchBoardData(boardId));
+    const refreshBoardImmediate = () => fetchBoardData(boardId);
 
-    socketService.on("card:member:added", () => fetchBoardData(boardId));
-    socketService.on("card:member:removed", () => fetchBoardData(boardId));
+    const onCommentChange = ({ cardId }: { cardId: string }) =>
+      fetchComments(cardId);
+    const onAttachmentChange = ({ cardId }: { cardId: string }) =>
+      fetchAttachments(cardId);
+    const refreshLabels = () => fetchLabels(boardId);
 
-    socketService.on("card:label:added", () => fetchBoardData(boardId));
-    socketService.on("card:label:removed", () => fetchBoardData(boardId));
+    CARD_EVENTS.forEach((e) => socketService.on(e, refreshCard));
+    LIST_EVENTS.forEach((e) => socketService.on(e, refreshList));
+    BOARD_EVENTS.forEach((e) => socketService.on(e, refreshBoardImmediate));
 
-    socketService.on("list:created", () => fetchBoardData(boardId));
-    socketService.on("list:updated", () => fetchBoardData(boardId));
-    socketService.on("list:deleted", () => fetchBoardData(boardId));
-    socketService.on("list:moved", () => fetchBoardData(boardId));
+    socketService.on("comment:created", onCommentChange);
+    socketService.on("comment:updated", onCommentChange);
+    socketService.on("comment:deleted", onCommentChange);
 
-    socketService.on<{ cardId: string }>("comment:created", ({ cardId }) =>
-      fetchComments(cardId)
-    );
-    socketService.on<{ cardId: string }>("comment:updated", ({ cardId }) =>
-      fetchComments(cardId)
-    );
-    socketService.on<{ cardId: string }>("comment:deleted", ({ cardId }) =>
-      fetchComments(cardId)
-    );
+    socketService.on("attachment:added", onAttachmentChange);
+    socketService.on("attachment:deleted", onAttachmentChange);
 
-    socketService.on<{ cardId: string }>("attachment:added", ({ cardId }) =>
-      fetchAttachments(cardId)
-    );
-    socketService.on<{ cardId: string }>("attachment:deleted", ({ cardId }) =>
-      fetchAttachments(cardId)
-    );
-
-    socketService.on("label:created", () => fetchLabels(boardId));
-    socketService.on("label:updated", () => fetchLabels(boardId));
-    socketService.on("label:deleted", () => fetchLabels(boardId));
-
-    socketService.on("board:updated", () => fetchBoardData(boardId));
-    socketService.on("board:member:added", () => fetchBoardData(boardId));
-    socketService.on("board:member:removed", () => fetchBoardData(boardId));
-    socketService.on("board:member:role:updated", () =>
-      fetchBoardData(boardId)
-    );
+    socketService.on("label:created", refreshLabels);
+    socketService.on("label:updated", refreshLabels);
+    socketService.on("label:deleted", refreshLabels);
 
     return () => {
-      console.log("🔴 Socket leaving board:", boardId);
       socketService.leaveBoard(boardId);
 
-      [
-        "card:created",
-        "card:updated",
-        "card:deleted",
-        "card:moved",
-        "card:member:added",
-        "card:member:removed",
-        "card:label:added",
-        "card:label:removed",
-        "list:created",
-        "list:updated",
-        "list:deleted",
-        "list:moved",
-        "comment:created",
-        "comment:updated",
-        "comment:deleted",
-        "attachment:added",
-        "attachment:deleted",
-        "label:created",
-        "label:updated",
-        "label:deleted",
-        "board:updated",
-        "board:member:added",
-        "board:member:removed",
-        "board:member:role:updated",
-      ].forEach((event) => socketService.off(event));
+      refreshCard.cancel();
+      refreshList.cancel();
+
+      CARD_EVENTS.forEach((e) => socketService.off(e, refreshCard));
+      LIST_EVENTS.forEach((e) => socketService.off(e, refreshList));
+      BOARD_EVENTS.forEach((e) => socketService.off(e, refreshBoardImmediate));
+
+      socketService.off("comment:created", onCommentChange);
+      socketService.off("comment:updated", onCommentChange);
+      socketService.off("comment:deleted", onCommentChange);
+
+      socketService.off("attachment:added", onAttachmentChange);
+      socketService.off("attachment:deleted", onAttachmentChange);
+
+      socketService.off("label:created", refreshLabels);
+      socketService.off("label:updated", refreshLabels);
+      socketService.off("label:deleted", refreshLabels);
     };
-  }, [boardId, fetchBoardData, fetchComments, fetchAttachments, fetchLabels]);
+  }, [
+    boardId,
+    fetchBoardData,
+    fetchComments,
+    fetchAttachments,
+    fetchLabels,
+    refreshCard,
+    refreshList,
+  ]);
 };

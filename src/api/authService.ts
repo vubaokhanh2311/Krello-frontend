@@ -3,6 +3,7 @@ import type { LoginRequest, LoginResponse } from "../types/LoginType";
 import type { RegistrerRequest, RegisterResponse } from "../types/RegisterType";
 import type { UserProfile } from "../types/UserProfileType";
 import { useUserStore } from "../stores/userStore";
+import socketService from "../service/socket.service";
 
 export async function login(values: LoginRequest): Promise<LoginResponse> {
   const res = await RestClient.post<LoginResponse>("/auth/login", values);
@@ -24,7 +25,10 @@ export async function getUserProfile(): Promise<UserProfile> {
 }
 
 export const logout = () => {
+  socketService.disconnect();
+
   useUserStore.getState().clearUser();
   RestClient.clearTokens();
+
   window.location.href = "/login";
 };

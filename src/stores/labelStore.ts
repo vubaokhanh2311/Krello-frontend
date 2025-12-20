@@ -18,6 +18,10 @@ export interface UpdateLabelDto {
   color: string | null;
 }
 
+interface ApiResponse<T> {
+  data: T;
+}
+
 interface LabelStore {
   labels: Label[];
   isLoading: boolean;
@@ -40,7 +44,7 @@ export const useLabelStore = create<LabelStore>((set, get) => ({
   fetchLabels: async (boardId) => {
     set({ isLoading: true });
     try {
-      const res = await getLabel(boardId);
+      const res = (await getLabel(boardId)) as ApiResponse<Label[]>;
       set({ labels: res.data });
     } finally {
       set({ isLoading: false });
@@ -48,8 +52,12 @@ export const useLabelStore = create<LabelStore>((set, get) => ({
   },
 
   createLabelAction: async (boardId, dto) => {
-    const res = await createLabel(boardId, dto);
-    const newLabel = res.data as Label;
+    const createDto = {
+      name: dto.name,
+      color: dto.color || "#808080", // Default color if null
+    };
+    const res = (await createLabel(boardId, createDto)) as ApiResponse<Label>;
+    const newLabel = res.data;
 
     set({
       labels: [...get().labels, newLabel],
@@ -59,8 +67,16 @@ export const useLabelStore = create<LabelStore>((set, get) => ({
   },
 
   updateLabelAction: async (boardId, labelId, dto) => {
-    const res = await updateLabel(boardId, labelId, dto);
-    const updated = res.data as Label;
+    const updateDto = {
+      name: dto.name,
+      color: dto.color || "#808080",
+    };
+    const res = (await updateLabel(
+      boardId,
+      labelId,
+      updateDto
+    )) as ApiResponse<Label>;
+    const updated = res.data;
 
     set({
       labels: get().labels.map((l) => (l.id === labelId ? updated : l)),

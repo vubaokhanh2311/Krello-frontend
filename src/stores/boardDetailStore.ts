@@ -78,6 +78,7 @@ interface BoardDetailStore {
     destColId: string,
     newTaskIds: string[]
   ) => Promise<void>;
+  getColumnIdByTask: (taskId: string) => string | undefined;
 
   reset: () => void;
 }
@@ -116,6 +117,13 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
       data: { ...state.data, columns },
     })),
 
+  getColumnIdByTask: (taskId: string) => {
+    const state = get();
+    return Object.keys(state.data.columns).find((key) =>
+      state.data.columns[key].taskIds.includes(taskId)
+    );
+  },
+
   fetchBoardData: async (boardId) => {
     try {
       set({ isLoading: true });
@@ -124,18 +132,18 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
       const uiData = apiData.map(mapApiToUiMember);
       set({ members: uiData });
 
-      const resBoard = await getBoardDetail(boardId);
+      const resBoard = (await getBoardDetail(boardId)) as BoardTS;
       set({ boardDetail: resBoard });
 
       const resList = (await getList(boardId)) as ApiListResponse;
       const sortedColumns = resList.data.sort(
-        (a, b) => a.position - b.position
+        (a: ApiColumn, b: ApiColumn) => a.position - b.position
       );
 
       const apiColumns: Record<string, ColumnData> = {};
       const apiColumnOrder: string[] = [];
 
-      sortedColumns.forEach((col) => {
+      sortedColumns.forEach((col: ApiColumn) => {
         apiColumns[col.id] = {
           id: col.id,
           title: col.title,
@@ -186,7 +194,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
     if (!title.trim()) return;
 
     try {
-      const newCol = await createList(boardId, { title });
+      const newCol = (await createList(boardId, { title })) as ApiColumn;
 
       set((state) => ({
         data: {
@@ -257,7 +265,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
 
   addTaskToColumn: async (colId, title) => {
     try {
-      const resCard = await createCard(colId, { title });
+      const resCard = (await createCard(colId, { title })) as ApiCard;
       const newTask: Task = mapApiCardToTask(resCard);
       const taskId = newTask.id;
 
@@ -500,7 +508,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
         if (!member) return;
         await addCardMember(taskId, { userId });
 
-        const newMember = {
+        const newMember: { id: string; name: string; avatar: string | null } = {
           id: member.id,
           name: member.name,
           avatar: member.avatar,
@@ -540,7 +548,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
       if (!colId) return;
 
       let dueDateString = "";
-      let dueDateObj: Date | null = null;
+      let dueDateObj: Date | undefined = undefined;
 
       if (dueDate) {
         if (typeof dueDate === "string") {
@@ -580,7 +588,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
       const updateData: {
         title: string;
         description?: string;
-        dueDate?: Date | null;
+        dueDate?: Date;
       } = {
         title: task.title,
         dueDate: dueDateObj,
@@ -603,7 +611,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
     }
   },
 
-  moveTask: async (cardId, sourceColId, destColId, newTaskIds) => {
+  moveTask: async (cardId, _sourceColId, destColId, newTaskIds) => {
     try {
       await putCard(destColId, cardId, {
         listId: destColId,
@@ -612,13 +620,6 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
     } catch (err) {
       console.error(err);
     }
-  },
-
-  getColumnIdByTask: (taskId) => {
-    const state = get();
-    return Object.keys(state.data.columns).find((key) =>
-      state.data.columns[key].taskIds.includes(taskId)
-    );
   },
 
   reset: () => set(initialState),

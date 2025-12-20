@@ -25,6 +25,13 @@ interface AttachmentStore {
   clearAttachments: () => void;
 }
 
+interface ApiResponse<T> {
+  data: T;
+}
+
+type AttachmentsResponse = Attachment[] | ApiResponse<Attachment[]>;
+type AttachmentResponse = Attachment | ApiResponse<Attachment>;
+
 export const useAttachmentStore = create<AttachmentStore>((set, get) => ({
   attachments: {},
   isLoading: false,
@@ -32,11 +39,11 @@ export const useAttachmentStore = create<AttachmentStore>((set, get) => ({
   fetchAttachments: async (cardId) => {
     try {
       set({ isLoading: true });
-      const res = await getAttachments(cardId);
-      const attachmentsData = Array.isArray(res) ? res : res.data || res;
+      const res = (await getAttachments(cardId)) as AttachmentsResponse;
+      const attachmentsData = Array.isArray(res) ? res : res.data;
 
       const sortedAttachments = attachmentsData.sort(
-        (b, a) =>
+        (b: Attachment, a: Attachment) =>
           new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       );
 
@@ -68,14 +75,17 @@ export const useAttachmentStore = create<AttachmentStore>((set, get) => ({
         formData.append("name", name.trim());
       }
 
-      const res = await createAttachment(cardId, formData);
-      const newAttachment = res.data || res;
+      const res = (await createAttachment(
+        cardId,
+        formData
+      )) as AttachmentResponse;
+      const newAttachment = "data" in res ? res.data : res;
 
       set((state) => {
         const currentAttachments = state.attachments[cardId] || [];
 
         const updatedAttachments = [...currentAttachments, newAttachment].sort(
-          (b, a) =>
+          (b: Attachment, a: Attachment) =>
             new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
         );
         return {
@@ -132,8 +142,12 @@ export const useAttachmentStore = create<AttachmentStore>((set, get) => ({
     }
 
     try {
-      const res = await updateAttachment(cardId, attachmentId, trimmedName);
-      const updatedAttachment = res.data ?? res;
+      const res = (await updateAttachment(
+        cardId,
+        attachmentId,
+        trimmedName
+      )) as AttachmentResponse;
+      const updatedAttachment = "data" in res ? res.data : res;
 
       set((state) => ({
         attachments: {
@@ -209,7 +223,7 @@ export const useAttachmentStore = create<AttachmentStore>((set, get) => ({
               ...(state.attachments[cardId] || []),
               attachmentToDelete,
             ].sort(
-              (b, a) =>
+              (b: Attachment, a: Attachment) =>
                 new Date(a.createdAt).getTime() -
                 new Date(b.createdAt).getTime()
             ),

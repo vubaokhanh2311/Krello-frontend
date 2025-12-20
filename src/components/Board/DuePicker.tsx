@@ -63,7 +63,6 @@ export default function DuePicker({ dueDate, onChange }: DuePickerProps) {
         locale="vi"
         firstDayOfWeek={1}
         size="sm"
-        clearable
       />
 
       <div className="flex gap-2 pt-2">

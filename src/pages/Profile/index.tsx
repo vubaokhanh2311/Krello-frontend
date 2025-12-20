@@ -26,8 +26,9 @@ import ActivityList from "../../components/Profile/ActivityList";
 import { updateProfile, updateAvatar } from "../../api/profileService";
 import { useUserStore } from "../../stores/userStore";
 import { logout } from "../../api/authService";
+
 export default function Profile() {
-  const { user, setUser } = useUserStore();
+  const { user, updateUser } = useUserStore();
   const [isEditing, setIsEditing] = useState(false);
 
   const form = useForm({
@@ -52,7 +53,7 @@ export default function Profile() {
     try {
       await updateProfile(values);
 
-      setUser({
+      updateUser({
         ...user,
         ...values,
       });
@@ -78,7 +79,7 @@ export default function Profile() {
 
     try {
       const data = await updateAvatar(file);
-      setUser({ ...user, avatarUrl: data.avatarUrl });
+      updateUser({ ...user, avatarUrl: data.avatarUrl });
 
       notifications.show({
         title: "Thành công",

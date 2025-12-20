@@ -1,6 +1,12 @@
 import { create } from "zustand";
 import { notifications } from "@mantine/notifications";
-import type { BoardData, Task, ColumnData } from "../types/BoardDetail";
+import type {
+  BoardData,
+  Task,
+  ColumnData,
+  ApiColumn,
+  ApiCard,
+} from "../types/BoardDetail";
 import type { BoardTS } from "../pages/Board/BoardType";
 import type { Member } from "../types/Member";
 import { getBoardMembers } from "../api/MemberService";
@@ -18,8 +24,6 @@ import {
 import { mapApiCardToTask } from "../utils/mapApiCardToTask";
 import { mapApiToUiMember } from "../utils/memberMapper";
 import { updateLabelTask, deleteLabelTask } from "../api/labelService";
-import type { ApiColumn } from "../types/BoardDetail";
-import type { Task as ApiCard } from "../types/BoardDetail";
 
 interface ApiListResponse {
   data: ApiColumn[];
@@ -266,7 +270,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
   addTaskToColumn: async (colId, title) => {
     try {
       const resCard = (await createCard(colId, { title })) as ApiCard;
-      const newTask: Task = mapApiCardToTask(resCard);
+      const newTask = mapApiCardToTask(resCard);
       const taskId = newTask.id;
 
       set((state) => {

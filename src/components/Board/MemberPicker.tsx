@@ -5,7 +5,7 @@ import type { Member } from "../../types/Member";
 import { includesIgnoreCase, normalizeKeyword } from "../../utils/stringUtils";
 import { resolveAvatarUrl } from "../../utils/avatar";
 import type { Task } from "../../types/BoardDetail";
-
+import { includesIgnoreCase, normalizeKeyword } from "../../utils/stringUtils";
 interface MemberPickerProps {
   boardId: string;
   boardMembers: Member[];

@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Checkbox, Avatar, Text } from "@mantine/core";
 import type { Member } from "../../types/Member";
 import type { Task } from "../../types/BoardDetail";
-
+import { includesIgnoreCase, normalizeKeyword } from "../../utils/stringUtils";
 interface MemberPickerProps {
   boardId: string;
   boardMembers: Member[];

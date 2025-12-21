@@ -17,6 +17,7 @@ import { useEffect, useState } from "react";
 import { CreateBoardModal } from "../../../Board/CreateBoardModal";
 import { CreateBoard, searchBoards } from "../../../../api/boardService";
 import { notifications } from "@mantine/notifications";
+import { useDebounce } from "../../../../hooks/useDebounce";
 
 export default function Header() {
   const { user } = useUserStore();
@@ -25,6 +26,7 @@ export default function Header() {
   const [isLoading, setIsLoading] = useState(false);
 
   const [keyword, setKeyword] = useState("");
+  const debouncedKeyword = useDebounce(keyword, 300);
   const [results, setResults] = useState<any[]>([]);
   const [openSearch, setOpenSearch] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -57,16 +59,16 @@ export default function Header() {
   };
 
   useEffect(() => {
-    if (!keyword.trim()) {
+    if (!debouncedKeyword.trim()) {
       setResults([]);
       setOpenSearch(false);
       return;
     }
 
-    const timer = setTimeout(async () => {
+    const fetchBoards = async () => {
       try {
         setIsSearching(true);
-        const res = await searchBoards(keyword);
+        const res = await searchBoards(debouncedKeyword);
         setResults(res?.data ?? []);
         setOpenSearch(true);
       } catch {
@@ -74,10 +76,10 @@ export default function Header() {
       } finally {
         setIsSearching(false);
       }
-    }, 300);
+    };
 
-    return () => clearTimeout(timer);
-  }, [keyword]);
+    fetchBoards();
+  }, [debouncedKeyword]);
 
   if (!user) return null;
 

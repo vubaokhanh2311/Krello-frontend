@@ -1,46 +1,82 @@
 import { create } from "zustand";
+import { notifications } from "@mantine/notifications";
 import { getBoard, getBoardsJoinedByUser } from "../api/boardService";
 import type { BoardTS } from "../pages/Board/BoardType";
-import { notifications } from "@mantine/notifications";
+
+interface PaginationMeta {
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
 
 interface BoardStore {
   boards: BoardTS[];
   boardsJoined: BoardTS[];
+  boardsMeta: PaginationMeta | null;
+  boardsJoinedMeta: PaginationMeta | null;
   isLoading: boolean;
 
-  fetchBoards: () => Promise<void>;
-  setBoards: (boards: BoardTS[]) => void;
-  setBoardsJoined: (boardsJoined: BoardTS[]) => void;
+  fetchBoards: (page?: number) => Promise<void>;
+  fetchBoardsJoined: (page?: number) => Promise<void>;
 }
 
 export const useBoardStore = create<BoardStore>((set) => ({
   boards: [],
   boardsJoined: [],
+  boardsMeta: null,
+  boardsJoinedMeta: null,
   isLoading: false,
 
-  fetchBoards: async () => {
+  fetchBoards: async (page = 1) => {
     try {
       set({ isLoading: true });
-      const res = await getBoard() as { data: BoardTS[] };
-      const resBoardsJoined = await getBoardsJoinedByUser() as BoardTS[];
-      
+
+      const res = await getBoard({
+        page,
+        pageSize: 8,
+      });
+
       set({
         boards: res.data,
-        boardsJoined: resBoardsJoined,
+        boardsMeta: res.meta,
         isLoading: false,
       });
     } catch (error) {
       set({ isLoading: false });
-      const errorMessage = error instanceof Error ? error.message : "Kết nối sever thất bại";
+
       notifications.show({
         title: "Thất bại",
-        message: errorMessage,
+        message:
+          error instanceof Error ? error.message : "Kết nối server thất bại",
         color: "red",
-        autoClose: 3000,
       });
     }
   },
 
-  setBoards: (boards) => set({ boards }),
-  setBoardsJoined: (boardsJoined) => set({ boardsJoined }),
+  fetchBoardsJoined: async (page = 1) => {
+    try {
+      set({ isLoading: true });
+
+      const res = await getBoardsJoinedByUser({
+        page,
+        pageSize: 8,
+      });
+
+      set({
+        boardsJoined: res.data,
+        boardsJoinedMeta: res.meta,
+        isLoading: false,
+      });
+    } catch (error) {
+      set({ isLoading: false });
+
+      notifications.show({
+        title: "Thất bại",
+        message:
+          error instanceof Error ? error.message : "Kết nối server thất bại",
+        color: "red",
+      });
+    }
+  },
 }));

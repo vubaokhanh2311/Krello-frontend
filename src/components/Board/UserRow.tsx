@@ -6,7 +6,7 @@ import { removeMember, updateMemberRole } from "../../api/MemberService";
 import { useParams } from "react-router-dom";
 import { notifications } from "@mantine/notifications";
 import { modals } from "@mantine/modals";
-
+import { resolveAvatarUrl } from "../../utils/avatar";
 interface UserRowProps {
   member: Member;
   onRemoved?: (id: string) => void;
@@ -106,19 +106,16 @@ const UserRow: React.FC<UserRowProps> = ({
     <div className="flex items-center justify-between group py-3 px-3 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-100 transition-all duration-200">
       <div className="flex items-center gap-3">
         <Avatar
-          src={
-            member.avatar
-              ? `${import.meta.env.VITE_URL_API}${member.avatar}`
-              : undefined
-          }
+          src={resolveAvatarUrl(member.avatar)}
           radius="xl"
           size="md"
           alt={member.name}
           color="blue"
           className="shadow-sm ring-1 ring-gray-100"
         >
-          {member.name.charAt(0)}
+          {!member.avatar && member.name?.charAt(0).toUpperCase()}
         </Avatar>
+
         <div className="flex flex-col">
           <Text size="sm" fw={600}>
             {member.name}

@@ -3,7 +3,7 @@ import { Checkbox, Avatar, Text } from "@mantine/core";
 import type { Member } from "../../types/Member";
 import type { TaskMember } from "../../utils/mapApiCardToTask";
 import { includesIgnoreCase, normalizeKeyword } from "../../utils/stringUtils";
-
+import { resolveAvatarUrl } from "../../utils/avatar";
 interface MemberPickerProps {
   boardId: string;
   boardMembers: Member[];
@@ -72,18 +72,14 @@ export default function MemberPicker({
                 </div>
 
                 <Avatar
-                  src={
-                    member.avatar
-                      ? `${import.meta.env.VITE_URL_API}${member.avatar}`
-                      : undefined
-                  }
+                  src={resolveAvatarUrl(member.avatar)}
                   radius="xl"
-                  size="sm"
+                  size="md"
                   alt={member.name}
                   color="blue"
                   className="shadow-sm ring-1 ring-gray-100"
                 >
-                  {member.name?.charAt(0).toUpperCase()}
+                  {!member.avatar && member.name?.charAt(0).toUpperCase()}
                 </Avatar>
 
                 <div
@@ -109,4 +105,3 @@ export default function MemberPicker({
     </div>
   );
 }
-

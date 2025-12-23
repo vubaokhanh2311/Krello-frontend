@@ -7,7 +7,6 @@ import socketService from "../service/socket.service";
 
 export async function login(values: LoginRequest): Promise<LoginResponse> {
   const res = await RestClient.post<LoginResponse>("/auth/login", values);
-
   return res;
 }
 
@@ -15,7 +14,15 @@ export async function register(
   values: RegistrerRequest
 ): Promise<RegisterResponse> {
   const res = await RestClient.post<RegisterResponse>("/auth/register", values);
+  return res;
+}
 
+export async function loginWithGoogle(
+  googleToken: string
+): Promise<LoginResponse> {
+  const res = await RestClient.post<LoginResponse>("/auth/google", {
+    googleToken,
+  });
   return res;
 }
 
@@ -26,9 +33,7 @@ export async function getUserProfile(): Promise<UserProfile> {
 
 export const logout = () => {
   socketService.disconnect();
-
   useUserStore.getState().clearUser();
   RestClient.clearTokens();
-
   window.location.href = "/login";
 };

@@ -37,7 +37,7 @@ import type { Comment } from "../../types/Comment";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/vi";
-
+import { resolveAvatarUrl } from "../../utils/avatar";
 dayjs.extend(relativeTime);
 dayjs.locale("vi");
 
@@ -366,16 +366,13 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                       className="flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1"
                     >
                       <Avatar
-                        src={
-                          member.avatar
-                            ? `${import.meta.env.VITE_URL_API}${member.avatar}`
-                            : undefined
-                        }
+                        src={resolveAvatarUrl(member.avatar)}
                         size="xs"
                         color="blue"
                       >
                         {!member.avatar && member.name?.charAt(0).toUpperCase()}
                       </Avatar>
+
                       <span className="text-sm font-medium text-gray-700">
                         {member.name}
                       </span>
@@ -661,17 +658,14 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             <div className="flex gap-3">
               {user && (
                 <Avatar
-                  src={
-                    user.avatarUrl
-                      ? `${import.meta.env.VITE_URL_API}${user.avatarUrl}`
-                      : undefined
-                  }
+                  src={resolveAvatarUrl(user.avatarUrl)}
                   color="blue"
                   size="sm"
                 >
                   {!user.avatarUrl && user.name?.charAt(0).toUpperCase()}
                 </Avatar>
               )}
+
               <div className="flex-1">
                 <Textarea
                   placeholder="Viết bình luận..."
@@ -713,13 +707,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                   return (
                     <div key={comment.id} className="flex gap-3">
                       <Avatar
-                        src={
-                          comment.user?.avatarUrl
-                            ? `${import.meta.env.VITE_URL_API}${
-                                comment.user.avatarUrl
-                              }`
-                            : undefined
-                        }
+                        src={resolveAvatarUrl(comment.user?.avatarUrl)}
                         color="blue"
                         size="sm"
                         className="shrink-0"
@@ -727,6 +715,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                         {!comment.user?.avatarUrl &&
                           comment.user?.name?.charAt(0).toUpperCase()}
                       </Avatar>
+
                       <div className="flex-1">
                         {editingCommentId === comment.id ? (
                           <div className="space-y-2">

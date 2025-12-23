@@ -18,7 +18,7 @@ import { CreateBoardModal } from "../../../Board/CreateBoardModal";
 import { CreateBoard, searchBoards } from "../../../../api/boardService";
 import { notifications } from "@mantine/notifications";
 import { useDebounce } from "../../../../hooks/useDebounce";
-
+import { resolveAvatarUrl } from "../../../../utils/avatar";
 export default function Header() {
   const { user } = useUserStore();
 
@@ -34,7 +34,7 @@ export default function Header() {
   const safeResults = Array.isArray(results) ? results : [];
 
   const searchRef = useClickOutside(() => setOpenSearch(false));
-
+  const avatarSrc = resolveAvatarUrl(user.avatarUrl);
   const handleCreateBoard = async (values: any) => {
     setIsLoading(true);
     try {
@@ -194,17 +194,15 @@ export default function Header() {
 
           <Menu shadow="md" width={180} position="bottom-end">
             <Menu.Target>
-              <Avatar
-                radius="xl"
-                size="md"
-                src={
-                  user.avatarUrl
-                    ? `${import.meta.env.VITE_URL_API}${user.avatarUrl}`
-                    : undefined
-                }
-                alt={user.name}
-                className="cursor-pointer border border-gray-200"
-              />
+              <Avatar alt={user.name}>
+                {avatarSrc && (
+                  <img
+                    src={avatarSrc}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                )}
+              </Avatar>
             </Menu.Target>
             <Menu.Dropdown>
               <Menu.Item

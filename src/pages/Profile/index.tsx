@@ -19,7 +19,7 @@ import {
 import { TextInput, Button, Group, Avatar } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
-
+import { resolveAvatarUrl } from "../../utils/avatar";
 import BentoBox from "../../components/Profile/BentoBox";
 import StatItem from "../../components/Profile/StatItem";
 import ActivityList from "../../components/Profile/ActivityList";
@@ -89,7 +89,7 @@ export default function Profile() {
       });
     }
   };
-
+  const avatarSrc = resolveAvatarUrl(user.avatarUrl);
   if (!user) return null;
   return (
     <div className="min-h-screen bg-gray-100 p-8 md:p-6 font-sans antialiased text-gray-900">
@@ -100,15 +100,17 @@ export default function Profile() {
               <div className="relative group">
                 <Avatar
                   size={192}
-                  src={
-                    user.avatarUrl
-                      ? `${import.meta.env.VITE_URL_API}${user.avatarUrl}`
-                      : undefined
-                  }
                   alt={user.name}
                   className="border-4 border-indigo-200 shadow-md"
-                />
-
+                >
+                  {avatarSrc && (
+                    <img
+                      src={avatarSrc}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  )}
+                </Avatar>
                 <label className="absolute inset-0 bg-black/20 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white cursor-pointer">
                   <IconCamera size={24} />
                   <input

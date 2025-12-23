@@ -46,8 +46,8 @@ export default function BoardsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+    <div className=" bg-white">
+      <div className="max-w-7xl mx-auto space-y-12 mt-5">
         <section>
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 bg-blue-50 rounded-lg text-blue-600">

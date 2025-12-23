@@ -1,13 +1,13 @@
 import { useState, useMemo } from "react";
 import { Checkbox, Avatar, Text } from "@mantine/core";
 import type { Member } from "../../types/Member";
-import type { TaskMember } from "../../utils/mapApiCardToTask";
+import type { Task } from "../../types/BoardDetail";
 import { includesIgnoreCase, normalizeKeyword } from "../../utils/stringUtils";
 import { resolveAvatarUrl } from "../../utils/avatar";
 interface MemberPickerProps {
   boardId: string;
   boardMembers: Member[];
-  taskMembers: TaskMember[];
+  taskMembers: Task["members"];
   onToggleMember: (userId: string) => void;
 }
 

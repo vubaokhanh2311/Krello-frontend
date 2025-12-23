@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Modal,
   Textarea,
@@ -122,8 +122,8 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     if (!task?.labelIds?.length || !Array.isArray(labels)) return [];
 
     return labels.filter(
-      (label): label is { id: string } =>
-        Boolean(label) && task.labelIds.includes(label.id)
+      (label) =>
+        Boolean(label) && Boolean(label.id) && task.labelIds.includes(label.id)
     );
   }, [task?.labelIds, labels]);
 
@@ -136,7 +136,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     if (opened && boardId) {
       fetchLabels(boardId);
     }
-  }, [opened, boardId]);
+  }, [opened, boardId, fetchLabels]);
 
   useEffect(() => {
     if (task) {
@@ -198,8 +198,8 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     }
   };
 
-  const handleFileUpload = async (file: File) => {
-    if (!task) return;
+  const handleFileUpload = async (file: File | null) => {
+    if (!task || !file) return;
     try {
       await addAttachment(task.id, file);
     } catch (error) {

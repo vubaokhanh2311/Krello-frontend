@@ -4,7 +4,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { IconCalendar, IconTrash } from "@tabler/icons-react";
 import type { Task, Label } from "../../types/BoardDetail";
 import { Avatar } from "@mantine/core";
-
+import { resolveAvatarUrl } from "../../utils/avatar";
 import { useLabelStore } from "../../stores/labelStore";
 
 interface SortableTaskProps {
@@ -119,20 +119,16 @@ export const SortableTask: React.FC<SortableTaskProps> = ({
 
           <div className="flex -space-x-2">
             <Avatar.Group>
-              {(task.members ?? []).map((member) =>
-                member.avatar ? (
-                  <Avatar
-                    key={member.id}
-                    src={`${import.meta.env.VITE_URL_API}${member.avatar}`}
-                    alt={member.name}
-                    size="sm"
-                  />
-                ) : (
-                  <Avatar key={member.id} size="sm">
-                    {member.name?.charAt(0).toUpperCase()}
-                  </Avatar>
-                )
-              )}
+              {(task.members ?? []).map((member) => (
+                <Avatar
+                  key={member.id}
+                  src={resolveAvatarUrl(member.avatar)}
+                  alt={member.name}
+                  size="sm"
+                >
+                  {!member.avatar && member.name?.charAt(0).toUpperCase()}
+                </Avatar>
+              ))}
             </Avatar.Group>
           </div>
         </div>

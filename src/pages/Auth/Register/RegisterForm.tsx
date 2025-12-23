@@ -11,9 +11,15 @@ import { notifications } from "@mantine/notifications";
 import type { RegistrerRequest } from "../../../types/RegisterType";
 import validateRegister from "../../../utils/RegisterValidation";
 import { register } from "../../../api/authService";
-export default function LoginForm() {
-  const [loading, setLoading] = useState(false);
+import { Link } from "react-router-dom";
+import { useGoogleLogin } from "../../../hooks/useGoogleLogin";
+import { loginWithGoogle, getUserProfile } from "../../../api/authService";
+import RestClient from "../../../api/RestClient";
+import { useUserStore } from "../../../stores/userStore";
 
+export default function RegisterForm() {
+  const [loading, setLoading] = useState(false);
+  const { setUser } = useUserStore.getState();
   const form = useForm<RegistrerRequest>({
     initialValues: {
       name: "",
@@ -23,19 +29,46 @@ export default function LoginForm() {
     validate: validateRegister,
   });
 
+  const handleGoogleRegister = async (credential: string) => {
+    try {
+      setLoading(true);
+
+      const res = await loginWithGoogle(credential);
+      if (!res) throw new Error("Đăng nhập Google thất bại");
+
+      RestClient.setToken(res.accessToken);
+      const userProfile = await getUserProfile();
+      setUser(userProfile, res.accessToken, res.refreshToken);
+      notifications.show({
+        title: "Thành công",
+        message: "Đăng nhập Google thành công",
+        color: "green",
+        autoClose: 1000,
+      });
+
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 1000);
+    } catch (err: any) {
+      notifications.show({
+        title: "Thất bại",
+        message: err?.message || "Đăng nhập Google thất bại",
+        color: "red",
+      });
+      setLoading(false);
+    }
+  };
+
+  const googleButtonRef = useGoogleLogin({
+    onSuccess: handleGoogleRegister,
+  });
+
   const handleSubmit = async (values: RegistrerRequest) => {
     try {
       setLoading(true);
 
       const res = await register(values);
-      if (!res) {
-        notifications.show({
-          title: "Thất bại",
-          message: "Đăng ký thất bại",
-          color: "red",
-          autoClose: 3000,
-        });
-      }
+      if (!res) throw new Error("Đăng ký thất bại");
 
       notifications.show({
         title: "Thành công",
@@ -52,7 +85,6 @@ export default function LoginForm() {
         title: "Thất bại",
         message: error?.message || "Đăng ký thất bại",
         color: "red",
-        autoClose: 3000,
       });
       setLoading(false);
     }
@@ -65,16 +97,15 @@ export default function LoginForm() {
           label="Họ và Tên"
           placeholder="Nhập họ và tên"
           withAsterisk
-          size="md"
-          radius="md"
+          disabled={loading}
           {...form.getInputProps("name")}
         />
+
         <TextInput
           label="Email"
           placeholder="Nhập email"
           withAsterisk
-          size="md"
-          radius="md"
+          disabled={loading}
           {...form.getInputProps("email")}
         />
 
@@ -82,45 +113,29 @@ export default function LoginForm() {
           label="Mật khẩu"
           placeholder="Nhập mật khẩu"
           withAsterisk
-          size="md"
-          radius="md"
+          disabled={loading}
           {...form.getInputProps("password")}
         />
       </Stack>
 
-      <Button
-        type="submit"
-        fullWidth
-        color="blue"
-        size="md"
-        radius="md"
-        loading={loading}
-        mt="sm"
-      >
-        {loading ? "Đang đăng ký..." : "Đăng ký"}
+      <Button fullWidth type="submit" loading={loading}>
+        Đăng ký
       </Button>
 
-      <Divider
-        label="Hoặc tiếp tục với"
-        labelPosition="center"
-        my="md"
-        color="gray.3"
+      <p className="text-sm text-slate-600 text-center">
+        Bạn đã có tài khoản?{" "}
+        <Link to="/login" className="font-semibold text-indigo-600">
+          Đăng nhập
+        </Link>
+      </p>
+
+      <Divider label="Hoặc tiếp tục với" labelPosition="center" />
+
+      <div
+        ref={googleButtonRef}
+        className="w-full flex justify-center"
+        style={{ minHeight: 44 }}
       />
-
-      <Button
-        variant="default"
-        fullWidth
-        radius="md"
-        leftSection={
-          <img
-            src="https://www.svgrepo.com/show/355037/google.svg"
-            alt="Google"
-            className="h-5 w-5"
-          />
-        }
-      >
-        Google
-      </Button>
     </form>
   );
 }

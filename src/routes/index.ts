@@ -6,6 +6,8 @@ import Register from "../pages/Auth/Register/index";
 import BoardDetail from "../pages/BoardDetail/index";
 import { HeaderOnly } from "../components/Layout";
 import InvitationPage from "../components/Board/InvitationPage";
+import ForgotPassword from "../pages/Auth/ForgotPassword";
+import ResetPassword from "../pages/Auth/ResetPassword";
 
 export interface AppRoute {
   path: string;
@@ -27,6 +29,16 @@ export const publicRoute: AppRoute[] = [
   {
     path: "boards/invite/accept",
     component: InvitationPage,
+    layout: null,
+  },
+  {
+    path: "/forgot-password",
+    component: ForgotPassword,
+    layout: null,
+  },
+  {
+    path: "/reset-password",
+    component: ResetPassword,
     layout: null,
   },
 ];

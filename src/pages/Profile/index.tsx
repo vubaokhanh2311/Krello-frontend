@@ -94,8 +94,8 @@ export default function Profile() {
       });
     }
   };
-  const avatarSrc = resolveAvatarUrl(user.avatarUrl);
   if (!user) return null;
+  const avatarSrc = resolveAvatarUrl(user.avatarUrl);
 
   return (
     <div className="min-h-screen bg-gray-100 p-8 md:p-6 font-sans antialiased text-gray-900">

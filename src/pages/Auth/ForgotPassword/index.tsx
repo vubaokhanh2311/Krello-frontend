@@ -1,6 +1,6 @@
 import { IconMail, IconArrowLeft } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
-import { TextInput, Loader } from "@mantine/core";
+import { TextInput } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { Link } from "react-router-dom";
 import { forgotPassword } from "../../../api/authService";

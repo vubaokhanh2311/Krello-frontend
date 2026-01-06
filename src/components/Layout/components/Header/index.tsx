@@ -21,7 +21,6 @@ import { useDebounce } from "../../../../hooks/useDebounce";
 import { resolveAvatarUrl } from "../../../../utils/avatar";
 export default function Header() {
   const { user } = useUserStore();
-
   const [opened, { open, close }] = useDisclosure(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -34,6 +33,8 @@ export default function Header() {
   const safeResults = Array.isArray(results) ? results : [];
 
   const searchRef = useClickOutside(() => setOpenSearch(false));
+  if (!user) return null;
+
   const avatarSrc = resolveAvatarUrl(user.avatarUrl);
   const handleCreateBoard = async (values: any) => {
     setIsLoading(true);
@@ -80,8 +81,6 @@ export default function Header() {
 
     fetchBoards();
   }, [debouncedKeyword]);
-
-  if (!user) return null;
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white border-b border-gray-200 shadow-sm">

@@ -1,6 +1,6 @@
 import RestClient from "./RestClient";
-import type { BoardRequest } from "../types/BoardType";
-import type { BoardQuery } from "../types/BoardType";
+import type { ApiResponse } from "../types/ApiResponse";
+import type { BoardQuery, Board, BoardRequest } from "../types/BoardType";
 
 export async function getBoard(query?: BoardQuery) {
   return RestClient.get("/boards", {
@@ -25,7 +25,7 @@ export async function getBoardDetail(boardId: string) {
 }
 
 export async function searchBoards(keyword: string) {
-  return RestClient.get("/boards", {
+  return RestClient.get<ApiResponse<Board[]>>("/boards", {
     params: {
       page: 1,
       pageSize: 5,

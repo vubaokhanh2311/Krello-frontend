@@ -1,6 +1,10 @@
 export interface ApiResponse<T> {
   data: T;
-  total?: number;
-  page?: number;
-  pageSize?: number;
+  meta?: {
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  };
+  message?: string;
 }

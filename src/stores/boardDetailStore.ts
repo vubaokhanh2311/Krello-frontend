@@ -24,7 +24,7 @@ import {
 import { mapApiCardToTask } from "../utils/mapApiCardToTask";
 import { mapApiToUiMember } from "../utils/memberMapper";
 import { updateLabelTask, deleteLabelTask } from "../api/labelService";
-
+import { mapBoardToBoardTS } from "../utils/boardMapper";
 interface ApiListResponse {
   data: ApiColumn[];
 }
@@ -136,8 +136,11 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
       const uiData = apiData.map(mapApiToUiMember);
       set({ members: uiData });
 
-      const resBoard = (await getBoardDetail(boardId)) as BoardTS;
-      set({ boardDetail: resBoard });
+      const resBoard = await getBoardDetail(boardId);
+
+      set({
+        boardDetail: mapBoardToBoardTS(resBoard.data),
+      });
 
       const resList = (await getList(boardId)) as ApiListResponse;
       const sortedColumns = resList.data.sort(

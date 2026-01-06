@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { notifications } from "@mantine/notifications";
 import { getBoard, getBoardsJoinedByUser } from "../api/boardService";
 import type { BoardTS } from "../pages/Board/BoardType";
-
+import { mapBoardToBoardTS } from "../utils/boardMapper";
 interface PaginationMeta {
   total: number;
   page: number;
@@ -38,8 +38,8 @@ export const useBoardStore = create<BoardStore>((set) => ({
       });
 
       set({
-        boards: res.data,
-        boardsMeta: res.meta,
+        boards: res.data.map(mapBoardToBoardTS),
+        boardsMeta: res.meta ?? null,
         isLoading: false,
       });
     } catch (error) {
@@ -64,8 +64,9 @@ export const useBoardStore = create<BoardStore>((set) => ({
       });
 
       set({
-        boardsJoined: res.data,
-        boardsJoinedMeta: res.meta,
+        boardsJoined: res.data.map(mapBoardToBoardTS),
+        boardsJoinedMeta: res.meta ?? null,
+
         isLoading: false,
       });
     } catch (error) {

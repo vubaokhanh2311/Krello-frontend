@@ -4,6 +4,7 @@ import type {
   ApiBoardMember,
   InviteMember,
   confirmInvite,
+  ConfirmInviteResponse,
 } from "../types/Member";
 
 export async function getBoardMembers(
@@ -20,8 +21,13 @@ export async function inviteMember(boardId: string, values: InviteMember) {
   return res;
 }
 
-export async function confirmInvite(token: string) {
-  const res = await RestClient.post("boards/invite/confirm", { token });
+export async function confirmInvite(
+  token: string
+): Promise<ConfirmInviteResponse> {
+  const res = await RestClient.post<ConfirmInviteResponse>(
+    "boards/invite/confirm",
+    { token }
+  );
   return res;
 }
 

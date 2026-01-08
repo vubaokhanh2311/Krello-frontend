@@ -15,11 +15,10 @@ import {
   addCardMember,
   removeCardMember,
 } from "../api/cardService";
-import { mapApiCardToTask } from "../utils/mapApiCardToTask";
+import { mapApiCardToTask, type ApiCard } from "../utils/mapApiCardToTask";
 import { mapApiToUiMember } from "../utils/memberMapper";
 import { updateLabelTask, deleteLabelTask } from "../api/labelService";
 import type { ApiColumn } from "../types/BoardDetail";
-import type { Task as ApiCard } from "../types/BoardDetail";
 
 interface ApiListResponse {
   data: ApiColumn[];
@@ -78,6 +77,7 @@ interface BoardDetailStore {
     destColId: string,
     newTaskIds: string[]
   ) => Promise<void>;
+  getColumnIdByTask: (taskId: string) => string | undefined;
 
   reset: () => void;
 }
@@ -125,7 +125,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
       set({ members: uiData });
 
       const resBoard = await getBoardDetail(boardId);
-      set({ boardDetail: resBoard });
+      set({ boardDetail: resBoard as BoardTS });
 
       const resList = (await getList(boardId)) as ApiListResponse;
       const sortedColumns = resList.data.sort(
@@ -155,9 +155,10 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
 
       cardsResults.forEach((resCard, index) => {
         const col = sortedColumns[index];
+        const cardResponse = resCard as ApiCardResponse;
 
-        resCard.data.forEach((card: ApiCard) => {
-          const task = mapApiCardToTask(card);
+        cardResponse.data.forEach((card: ApiCard) => {
+          const task = mapApiCardToTask(card) as Task;
           tasks[task.id] = task;
           apiColumns[col.id].taskIds.push(task.id);
         });
@@ -171,7 +172,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
         },
         isLoading: false,
       });
-    } catch (error) {
+    } catch {
       set({ isLoading: false });
       notifications.show({
         title: "Thất bại",
@@ -186,7 +187,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
     if (!title.trim()) return;
 
     try {
-      const newCol = await createList(boardId, { title });
+      const newCol = (await createList(boardId, { title })) as unknown as ApiColumn;
 
       set((state) => ({
         data: {
@@ -211,7 +212,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
         color: "green",
         autoClose: 2000,
       });
-    } catch (error) {
+    } catch {
       notifications.show({
         title: "Thất bại",
         message: "Thêm danh sách thất bại",
@@ -245,7 +246,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
         color: "green",
         autoClose: 2000,
       });
-    } catch (error) {
+    } catch {
       notifications.show({
         title: "Thất bại",
         message: "Cập nhật tiêu đề thất bại",
@@ -257,8 +258,8 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
 
   addTaskToColumn: async (colId, title) => {
     try {
-      const resCard = await createCard(colId, { title });
-      const newTask: Task = mapApiCardToTask(resCard);
+      const resCard = (await createCard(colId, { title })) as unknown as ApiCard;
+      const newTask = mapApiCardToTask(resCard) as Task;
       const taskId = newTask.id;
 
       set((state) => {
@@ -284,7 +285,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
         color: "green",
         autoClose: 2000,
       });
-    } catch (error) {
+    } catch {
       notifications.show({
         title: "Thất bại",
         message: "Thêm thẻ thất bại",
@@ -523,11 +524,13 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
               : prevState.activeCard,
         }));
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error toggling member:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "Không thể cập nhật thành viên";
       notifications.show({
         title: "Lỗi",
-        message: err?.message || "Không thể cập nhật thành viên",
+        message: errorMessage,
         color: "red",
       });
     }
@@ -580,11 +583,13 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
       const updateData: {
         title: string;
         description?: string;
-        dueDate?: Date | null;
+        dueDate?: Date;
       } = {
         title: task.title,
-        dueDate: dueDateObj,
       };
+      if (dueDateObj !== null) {
+        updateData.dueDate = dueDateObj;
+      }
 
       await updateCard(colId, taskId, updateData);
 
@@ -603,7 +608,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
     }
   },
 
-  moveTask: async (cardId, sourceColId, destColId, newTaskIds) => {
+  moveTask: async (cardId, _sourceColId, destColId, newTaskIds) => {
     try {
       await putCard(destColId, cardId, {
         listId: destColId,
@@ -614,7 +619,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
     }
   },
 
-  getColumnIdByTask: (taskId) => {
+  getColumnIdByTask: (taskId: string) => {
     const state = get();
     return Object.keys(state.data.columns).find((key) =>
       state.data.columns[key].taskIds.includes(taskId)

@@ -32,12 +32,12 @@ export const useAttachmentStore = create<AttachmentStore>((set, get) => ({
   fetchAttachments: async (cardId) => {
     try {
       set({ isLoading: true });
-      const res = await getAttachments(cardId);
-      const attachmentsData = Array.isArray(res) ? res : res.data || res;
+      const res = (await getAttachments(cardId)) as unknown as Attachment[] | { data?: Attachment[] };
+      const attachmentsData = Array.isArray(res) ? res : (res as { data?: Attachment[] }).data || [];
 
       const sortedAttachments = attachmentsData.sort(
-        (b, a) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        (a: Attachment, b: Attachment) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
 
       set((state) => ({
@@ -68,8 +68,8 @@ export const useAttachmentStore = create<AttachmentStore>((set, get) => ({
         formData.append("name", name.trim());
       }
 
-      const res = await createAttachment(cardId, formData);
-      const newAttachment = res.data || res;
+      const res = (await createAttachment(cardId, formData)) as unknown as Attachment | { data?: Attachment };
+      const newAttachment = (res as { data?: Attachment }).data || (res as Attachment);
 
       set((state) => {
         const currentAttachments = state.attachments[cardId] || [];
@@ -132,8 +132,8 @@ export const useAttachmentStore = create<AttachmentStore>((set, get) => ({
     }
 
     try {
-      const res = await updateAttachment(cardId, attachmentId, trimmedName);
-      const updatedAttachment = res.data ?? res;
+      const res = (await updateAttachment(cardId, attachmentId, trimmedName)) as unknown as Attachment | { data?: Attachment };
+      const updatedAttachment = (res as { data?: Attachment }).data ?? (res as Attachment);
 
       set((state) => ({
         attachments: {

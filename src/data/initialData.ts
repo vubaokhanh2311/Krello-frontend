@@ -9,7 +9,7 @@ export const initialData: BoardData = {
       title: "Implement Login",
       date: "Nov 24",
       priority: "Medium",
-      members: ["https://i.pravatar.cc/150?u=1"],
+      members: [{ id: "1", name: "User 1", avatar: "https://i.pravatar.cc/150?u=1" }],
       tags: ["#F06595", "#339AF0"],
     },
     "task-2": {
@@ -17,7 +17,7 @@ export const initialData: BoardData = {
       title: "Implement UI Admin",
       date: "Nov 26",
       priority: "Medium",
-      members: ["https://i.pravatar.cc/150?u=2"],
+      members: [{ id: "2", name: "User 2", avatar: "https://i.pravatar.cc/150?u=2" }],
       tags: ["#FCC419", "#51CF66"],
     },
     "task-3": {
@@ -25,7 +25,7 @@ export const initialData: BoardData = {
       title: "Implement DB Admin",
       date: "Nov 28",
       priority: "Medium",
-      members: ["https://i.pravatar.cc/150?u=3"],
+      members: [{ id: "3", name: "User 3", avatar: "https://i.pravatar.cc/150?u=3" }],
       tags: ["#339AF0"],
     },
     "task-4": {
@@ -33,7 +33,7 @@ export const initialData: BoardData = {
       title: "Implement API User",
       date: "Nov 16",
       priority: "Medium",
-      members: ["https://i.pravatar.cc/150?u=4"],
+      members: [{ id: "4", name: "User 4", avatar: "https://i.pravatar.cc/150?u=4" }],
       tags: ["#51CF66", "#F06595"],
     },
   },

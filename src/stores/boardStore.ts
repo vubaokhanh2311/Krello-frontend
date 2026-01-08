@@ -10,6 +10,11 @@ interface PaginationMeta {
   totalPages: number;
 }
 
+interface BoardApiResponse {
+  data: BoardTS[];
+  meta: PaginationMeta;
+}
+
 interface BoardStore {
   boards: BoardTS[];
   boardsJoined: BoardTS[];
@@ -32,10 +37,10 @@ export const useBoardStore = create<BoardStore>((set) => ({
     try {
       set({ isLoading: true });
 
-      const res = await getBoard({
+      const res = (await getBoard({
         page,
         pageSize: 8,
-      });
+      })) as unknown as BoardApiResponse;
 
       set({
         boards: res.data,
@@ -58,10 +63,10 @@ export const useBoardStore = create<BoardStore>((set) => ({
     try {
       set({ isLoading: true });
 
-      const res = await getBoardsJoinedByUser({
+      const res = (await getBoardsJoinedByUser({
         page,
         pageSize: 8,
-      });
+      })) as unknown as BoardApiResponse;
 
       set({
         boardsJoined: res.data,

@@ -25,6 +25,7 @@ import {
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import type { Task } from "../../utils/mapApiCardToTask";
+import type { Label } from "../../types/BoardDetail";
 import LabelPicker from "./LabelPicker";
 import MemberPicker from "./MemberPicker";
 import type { Member } from "../../types/Member";
@@ -122,7 +123,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     if (!task?.labelIds?.length || !Array.isArray(labels)) return [];
 
     return labels.filter(
-      (label): label is { id: string } =>
+      (label): label is Label =>
         Boolean(label) && task.labelIds.includes(label.id)
     );
   }, [task?.labelIds, labels]);
@@ -453,7 +454,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               </Popover.Dropdown>
             </Popover>
 
-            <FileButton onChange={handleFileUpload} accept="*">
+            <FileButton onChange={(file) => file && handleFileUpload(file)} accept="*">
               {(props) => (
                 <Button {...props} leftSection={<IconPaperclip size={16} />}>
                   Đính kèm

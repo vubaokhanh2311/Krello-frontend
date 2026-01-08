@@ -25,9 +25,9 @@ export interface ApiCard {
 }
 
 export interface TaskMember {
-  id?: string;
-  name?: string;
-  avatar?: string | null;
+  id: string;
+  name: string;
+  avatar: string | null;
 }
 export interface Label {
   id: string;
@@ -65,7 +65,7 @@ export const mapApiCardToTask = (card: ApiCard): Task => {
       card.members?.map((m) => ({
         id: m.user?.id ?? "",
         name: m.user?.name ?? "",
-        avatar: m.user?.avatarUrl ?? "",
+        avatar: m.user?.avatarUrl ?? null,
       })) ?? [],
 
     // tags: tên label (nếu UI cũ còn dùng)

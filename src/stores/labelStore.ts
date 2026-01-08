@@ -18,6 +18,14 @@ export interface UpdateLabelDto {
   color: string | null;
 }
 
+interface LabelApiResponse {
+  data: Label[];
+}
+
+interface SingleLabelApiResponse {
+  data: Label;
+}
+
 interface LabelStore {
   labels: Label[];
   isLoading: boolean;
@@ -40,7 +48,7 @@ export const useLabelStore = create<LabelStore>((set, get) => ({
   fetchLabels: async (boardId) => {
     set({ isLoading: true });
     try {
-      const res = await getLabel(boardId);
+      const res = (await getLabel(boardId)) as unknown as LabelApiResponse;
       set({ labels: res.data });
     } finally {
       set({ isLoading: false });
@@ -48,7 +56,10 @@ export const useLabelStore = create<LabelStore>((set, get) => ({
   },
 
   createLabelAction: async (boardId, dto) => {
-    const res = await createLabel(boardId, dto);
+    const res = (await createLabel(boardId, {
+      name: dto.name,
+      color: dto.color ?? "",
+    })) as unknown as SingleLabelApiResponse;
     const newLabel = res.data as Label;
 
     set({
@@ -59,7 +70,10 @@ export const useLabelStore = create<LabelStore>((set, get) => ({
   },
 
   updateLabelAction: async (boardId, labelId, dto) => {
-    const res = await updateLabel(boardId, labelId, dto);
+    const res = (await updateLabel(boardId, labelId, {
+      name: dto.name,
+      color: dto.color ?? "",
+    })) as unknown as SingleLabelApiResponse;
     const updated = res.data as Label;
 
     set({

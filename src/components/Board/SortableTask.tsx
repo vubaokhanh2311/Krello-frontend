@@ -35,7 +35,7 @@ export const SortableTask: React.FC<SortableTaskProps> = ({
     },
   });
 
-  const isDragging = isSortableDragging || isOverlayDragging;
+  const _isDragging = isSortableDragging || isOverlayDragging;
 
   const storeLabels = useLabelStore((s) => s.labels);
   const taskLabels = (task.labelIds ?? [])

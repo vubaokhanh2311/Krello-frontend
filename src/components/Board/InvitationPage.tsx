@@ -4,6 +4,7 @@ import { IconCheck, IconMailFast, IconX } from "@tabler/icons-react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { notifications } from "@mantine/notifications";
 import { confirmInvite } from "../../api/MemberService";
+import socketService from "../../service/socket.service";
 
 const InvitationPage = () => {
   const [searchParams] = useSearchParams();
@@ -49,8 +50,15 @@ const InvitationPage = () => {
   const handleAccept = async () => {
     try {
       setLoading(true);
+
       const res = await confirmInvite(token);
-      if (!res) throw new Error("Không thể xác nhận lời mời");
+      if (!res?.boardId) {
+        throw new Error("Không thể xác nhận lời mời");
+      }
+
+      socketService.connect();
+
+      socketService.forceJoinBoard(res.boardId);
 
       notifications.show({
         title: "Thành công",
@@ -60,7 +68,8 @@ const InvitationPage = () => {
         onClose: () => {
           localStorage.removeItem("inviteToken");
           localStorage.removeItem("redirectAfterLogin");
-          navigate(res?.boardId ? `/board/${res.boardId}` : "/");
+
+          navigate(`/board/${res.boardId}`);
         },
       });
     } catch (error: any) {

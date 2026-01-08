@@ -33,3 +33,7 @@ export interface InviteMember {
 export interface confirmInvite {
   token: string;
 }
+
+export interface ConfirmInviteResponse {
+  boardId: string;
+}

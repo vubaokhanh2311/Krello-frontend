@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useMemo } from "react";
+import { useEffect, useCallback, useMemo } from "react";
 import {
   DndContext,
   closestCenter,
@@ -41,7 +41,6 @@ export default function TaskFlowApp() {
     newColumnTitle,
     activeCard,
     isModalOpen,
-    isLoading,
     setActiveId,
     setOverId,
     setIsCreatingColumn,

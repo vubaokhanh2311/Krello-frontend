@@ -33,11 +33,11 @@ export const useAttachmentStore = create<AttachmentStore>((set, get) => ({
     try {
       set({ isLoading: true });
       const res = await getAttachments(cardId);
-      const attachmentsData = Array.isArray(res) ? res : res.data || res;
+      const attachmentsData = Array.isArray(res) ? res : [];
 
       const sortedAttachments = attachmentsData.sort(
-        (b, a) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        (a: Attachment, b: Attachment) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
 
       set((state) => ({
@@ -69,14 +69,14 @@ export const useAttachmentStore = create<AttachmentStore>((set, get) => ({
       }
 
       const res = await createAttachment(cardId, formData);
-      const newAttachment = res.data || res;
+      const newAttachment = res;
 
       set((state) => {
         const currentAttachments = state.attachments[cardId] || [];
 
         const updatedAttachments = [...currentAttachments, newAttachment].sort(
-          (b, a) =>
-            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          (a: Attachment, b: Attachment) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
         return {
           attachments: {
@@ -133,7 +133,7 @@ export const useAttachmentStore = create<AttachmentStore>((set, get) => ({
 
     try {
       const res = await updateAttachment(cardId, attachmentId, trimmedName);
-      const updatedAttachment = res.data ?? res;
+      const updatedAttachment = res;
 
       set((state) => ({
         attachments: {

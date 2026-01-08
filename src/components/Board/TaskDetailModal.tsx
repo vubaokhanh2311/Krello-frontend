@@ -34,6 +34,7 @@ import { useUserStore } from "../../stores/userStore";
 import { useCommentStore } from "../../stores/commentStore";
 import { useAttachmentStore } from "../../stores/AttachmentStore";
 import type { Comment } from "../../types/Comment";
+import type { Label } from "../../types/BoardDetail";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/vi";
@@ -122,7 +123,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     if (!task?.labelIds?.length || !Array.isArray(labels)) return [];
 
     return labels.filter(
-      (label): label is { id: string } =>
+      (label): label is Label =>
         Boolean(label) && task.labelIds.includes(label.id)
     );
   }, [task?.labelIds, labels]);
@@ -453,7 +454,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               </Popover.Dropdown>
             </Popover>
 
-            <FileButton onChange={handleFileUpload} accept="*">
+            <FileButton onChange={(file) => file && handleFileUpload(file)} accept="*">
               {(props) => (
                 <Button {...props} leftSection={<IconPaperclip size={16} />}>
                   Đính kèm

@@ -19,7 +19,7 @@ import { mapApiCardToTask } from "../utils/mapApiCardToTask";
 import { mapApiToUiMember } from "../utils/memberMapper";
 import { updateLabelTask, deleteLabelTask } from "../api/labelService";
 import type { ApiColumn } from "../types/BoardDetail";
-import type { Task as ApiCard } from "../types/BoardDetail";
+import type { ApiCard } from "../utils/mapApiCardToTask";
 
 interface ApiListResponse {
   data: ApiColumn[];
@@ -79,6 +79,8 @@ interface BoardDetailStore {
     newTaskIds: string[]
   ) => Promise<void>;
 
+  getColumnIdByTask: (taskId: string) => string | undefined;
+
   reset: () => void;
 }
 
@@ -125,7 +127,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
       set({ members: uiData });
 
       const resBoard = await getBoardDetail(boardId);
-      set({ boardDetail: resBoard });
+      set({ boardDetail: resBoard as BoardTS });
 
       const resList = (await getList(boardId)) as ApiListResponse;
       const sortedColumns = resList.data.sort(
@@ -157,7 +159,12 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
         const col = sortedColumns[index];
 
         resCard.data.forEach((card: ApiCard) => {
-          const task = mapApiCardToTask(card);
+          const mappedTask = mapApiCardToTask(card);
+          // Convert to BoardDetail Task type (labels will be fetched separately)
+          const task: Task = {
+            ...mappedTask,
+            labels: [], // Labels are managed separately via labelIds
+          };
           tasks[task.id] = task;
           apiColumns[col.id].taskIds.push(task.id);
         });
@@ -186,7 +193,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
     if (!title.trim()) return;
 
     try {
-      const newCol = await createList(boardId, { title });
+      const newCol = (await createList(boardId, { title })) as ApiColumn;
 
       set((state) => ({
         data: {
@@ -258,7 +265,11 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
   addTaskToColumn: async (colId, title) => {
     try {
       const resCard = await createCard(colId, { title });
-      const newTask: Task = mapApiCardToTask(resCard);
+      const mappedTask = mapApiCardToTask(resCard as ApiCard);
+      const newTask: Task = {
+        ...mappedTask,
+        labels: [], // Labels are managed separately via labelIds
+      };
       const taskId = newTask.id;
 
       set((state) => {
@@ -564,7 +575,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
         return;
       }
 
-      const updatedTask = { ...task, date: dueDateString };
+      const updatedTask = { ...task, date: dueDateString } as Task;
 
       set((prevState) => ({
         data: {
@@ -580,10 +591,10 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
       const updateData: {
         title: string;
         description?: string;
-        dueDate?: Date | null;
+        dueDate?: Date;
       } = {
         title: task.title,
-        dueDate: dueDateObj,
+        dueDate: dueDateObj || undefined,
       };
 
       await updateCard(colId, taskId, updateData);
@@ -603,7 +614,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
     }
   },
 
-  moveTask: async (cardId, sourceColId, destColId, newTaskIds) => {
+  moveTask: async (cardId, _sourceColId, destColId, newTaskIds) => {
     try {
       await putCard(destColId, cardId, {
         listId: destColId,

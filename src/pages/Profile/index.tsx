@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   IconUser,
   IconMail,
@@ -27,7 +27,7 @@ import { updateProfile, updateAvatar } from "../../api/profileService";
 import { useUserStore } from "../../stores/userStore";
 import { logout } from "../../api/authService";
 export default function Profile() {
-  const { user, setUser } = useUserStore();
+  const { user, setUser, accessToken, refreshToken } = useUserStore();
   const [isEditing, setIsEditing] = useState(false);
 
   const form = useForm({
@@ -50,10 +50,12 @@ export default function Profile() {
     try {
       await updateProfile(values);
 
-      setUser({
-        ...user,
-        ...values,
-      });
+      if (user) {
+        setUser({
+          ...user,
+          ...values,
+        }, accessToken || "", refreshToken || "");
+      }
 
       notifications.show({
         title: "Thành công",
@@ -74,7 +76,9 @@ export default function Profile() {
   const handleFileChange = async (file: File) => {
     try {
       const data = await updateAvatar(file);
-      setUser({ ...user, avatarUrl: data.avatarUrl });
+      if (user) {
+        setUser({ ...user, avatarUrl: data.avatarUrl }, accessToken || "", refreshToken || "");
+      }
 
       notifications.show({
         title: "Thành công",
@@ -89,8 +93,8 @@ export default function Profile() {
       });
     }
   };
-  const avatarSrc = resolveAvatarUrl(user.avatarUrl);
   if (!user) return null;
+  const avatarSrc = resolveAvatarUrl(user.avatarUrl);
   return (
     <div className="min-h-screen bg-gray-100 p-8 md:p-6 font-sans antialiased text-gray-900">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -202,7 +206,7 @@ export default function Profile() {
                       Chỉnh sửa
                     </Button>
                   ) : (
-                    <Group spacing="sm">
+                    <Group gap="sm">
                       <Button
                         variant="light"
                         color="gray"

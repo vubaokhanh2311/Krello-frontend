@@ -34,7 +34,7 @@ export default function Header() {
   const safeResults = Array.isArray(results) ? results : [];
 
   const searchRef = useClickOutside(() => setOpenSearch(false));
-  const avatarSrc = resolveAvatarUrl(user.avatarUrl);
+  const avatarSrc = user ? resolveAvatarUrl(user.avatarUrl) : null;
   const handleCreateBoard = async (values: any) => {
     setIsLoading(true);
     try {
@@ -69,7 +69,7 @@ export default function Header() {
       try {
         setIsSearching(true);
         const res = await searchBoards(debouncedKeyword);
-        setResults(res?.data ?? []);
+        setResults((res as { data?: any[] })?.data ?? []);
         setOpenSearch(true);
       } catch {
         setResults([]);

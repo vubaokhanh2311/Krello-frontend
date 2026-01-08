@@ -41,7 +41,7 @@ export default function TaskFlowApp() {
     newColumnTitle,
     activeCard,
     isModalOpen,
-    isLoading,
+
     setActiveId,
     setOverId,
     setIsCreatingColumn,

@@ -35,7 +35,7 @@ export const useBoardStore = create<BoardStore>((set) => ({
       const res = await getBoard({
         page,
         pageSize: 8,
-      });
+      }) as { data: BoardTS[]; meta: PaginationMeta };
 
       set({
         boards: res.data,
@@ -61,7 +61,7 @@ export const useBoardStore = create<BoardStore>((set) => ({
       const res = await getBoardsJoinedByUser({
         page,
         pageSize: 8,
-      });
+      }) as { data: BoardTS[]; meta: PaginationMeta };
 
       set({
         boardsJoined: res.data,

@@ -19,15 +19,17 @@ export const useUnsplash = (query = "landscape", pageSize = 8) => {
 
     const fetchPhotos = async () => {
       try {
-        const res = await RestClient.get(`/unsplash/search`, {
+        const res = await RestClient.get<{ data?: UnsplashPhoto[]; results?: UnsplashPhoto[] }>(`/unsplash/search`, {
           params: { query, pageSize },
         });
 
-        console.log("Unsplash response full:", res.data);
+        console.log("Unsplash response full:", res);
 
-        const results = Array.isArray(res.data)
+        const results = Array.isArray(res)
+          ? res
+          : Array.isArray(res?.data)
           ? res.data
-          : res.data?.results || [];
+          : res?.results || [];
 
         if (results.length === 0) {
           console.warn("No photos found for query:", query);

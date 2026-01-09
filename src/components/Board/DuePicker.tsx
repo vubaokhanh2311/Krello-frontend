@@ -59,7 +59,7 @@ export default function DuePicker({ dueDate, onChange }: DuePickerProps) {
 
       <DatePicker
         value={date}
-        onChange={handleDateChange}
+        onChange={(value) => handleDateChange(value as Date | null)}
         locale="vi"
         firstDayOfWeek={1}
         size="sm"

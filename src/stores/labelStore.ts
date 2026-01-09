@@ -40,7 +40,7 @@ export const useLabelStore = create<LabelStore>((set, get) => ({
   fetchLabels: async (boardId) => {
     set({ isLoading: true });
     try {
-      const res = await getLabel(boardId);
+      const res = await getLabel(boardId) as { data: Label[] };
       set({ labels: res.data });
     } finally {
       set({ isLoading: false });
@@ -48,8 +48,8 @@ export const useLabelStore = create<LabelStore>((set, get) => ({
   },
 
   createLabelAction: async (boardId, dto) => {
-    const res = await createLabel(boardId, dto);
-    const newLabel = res.data as Label;
+    const res = await createLabel(boardId, { name: dto.name, color: dto.color || "#e5e7eb" });
+    const newLabel = (res as { data: Label }).data;
 
     set({
       labels: [...get().labels, newLabel],
@@ -59,8 +59,8 @@ export const useLabelStore = create<LabelStore>((set, get) => ({
   },
 
   updateLabelAction: async (boardId, labelId, dto) => {
-    const res = await updateLabel(boardId, labelId, dto);
-    const updated = res.data as Label;
+    const res = await updateLabel(boardId, labelId, { name: dto.name, color: dto.color || "#e5e7eb" });
+    const updated = (res as { data: Label }).data;
 
     set({
       labels: get().labels.map((l) => (l.id === labelId ? updated : l)),

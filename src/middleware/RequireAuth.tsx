@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { notifications } from "@mantine/notifications";
 
 interface Props {

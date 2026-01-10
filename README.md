@@ -1,73 +1,89 @@
-# React + TypeScript + Vite
+# 🧩 Trello-style Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern Trello-style task management frontend built with **React 19**, **TypeScript**, and **Vite**.  
+The application supports **real-time collaboration** via **Socket.IO**, provides secure authentication flows (including password reset), and delivers a responsive, user-friendly interface optimized for team collaboration.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ✨ Features
 
-## React Compiler
+### 🔐 Authentication & Security
+- User authentication: sign up / sign in / refresh token / logout.
+- **Change password** for authenticated users.
+- **Forgot password & reset password** via email verification link.
+- Secure JWT-based authentication.
+- Google OAuth sign-in (optional).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### ⚡ Real-time Collaboration (Socket.IO)
+- Real-time synchronization of boards, lists, and cards.
+- Instant updates during drag-and-drop actions.
+- Real-time comments, member assignments, and labels.
+- Automatic UI updates when changes are made by other users.
 
-## Expanding the ESLint configuration
+### 📋 Board / List / Card Management
+- Full CRUD operations.
+- Drag & drop using **dnd-kit**.
+- Pagination and search.
+- Board-level permissions: **owner / editor / viewer**.
+- Invite members via email or shareable links.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 🗂️ Card Management
+- Member assignments and labels.
+- Checklists.
+- Due dates.
+- Comments.
+- File attachments.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### 🎨 UI & UX
+- Upload and update user avatars.
+- Select board background images from **Unsplash**.
+- Fully responsive UI (desktop / tablet / mobile).
+- Dark mode support.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+---
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 🧰 Technology Stack
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Core
+- **React 19**
+- **TypeScript**
+- **Vite**
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### UI / Styling
+- **Mantine** (core, hooks, form, dates, modals, notifications)
+- **Tailwind CSS**
+- **clsx**
+- **Tabler Icons**
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### State & Data
+- **Zustand** – global state management
+- **Axios** – REST API client
+- **Socket.IO Client** – real-time communication
+
+### UX & Utilities
+- **dnd-kit** – drag & drop for boards, lists, and cards
+- **dayjs** – date & time utilities
+- **lodash** – helper utilities
+- **react-toastify** – toast notifications
+
+### Routing
+- **React Router DOM**
+
+---
+
+## 📦 Environment Requirements
+
+- Node.js >= 18
+- Running NestJS backend with REST API and Socket.IO enabled
+- Modern browsers (Chrome, Edge, Firefox)
+
+---
+
+## ⚙️ Environment Configuration
+
+Create a `.env` file in the project root:
+
+```env
+VITE_URL_API=http://localhost:3000/api
+VITE_SOCKET_URL=http://localhost:3000
+VITE_GOOGLE_CLIENT_ID=your_google_client_id

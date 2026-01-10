@@ -13,7 +13,7 @@ import type {
   DragOverEvent,
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import { IconPlus, IconX, IconFilter, IconSettings } from "@tabler/icons-react";
+import { IconPlus, IconX, IconShare3, IconSettings } from "@tabler/icons-react";
 import { Avatar, Button } from "@mantine/core";
 import type { Task } from "../../types/BoardDetail";
 import { SortableTask } from "../../components/Board/SortableTask";
@@ -263,18 +263,35 @@ export default function TaskFlowApp() {
           : background,
       }}
     >
-      <header className="w-full flex flex-col md:flex-row items-center justify-between px-6 py-3 bg-black/20 backdrop-blur-md border-b border-white/10 gap-4">
-        <div className="flex items-center gap-4 w-full md:w-auto">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-white leading-none">
-              {boardDetail?.name || ""}
-            </h1>
-          </div>
+      <header
+        className="
+  w-full
+  flex items-center justify-between
+  px-4 md:px-6
+  py-3
+  bg-black/20 backdrop-blur-md
+  border-b border-white/10
+  gap-3
+  min-w-0
+"
+      >
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <h1
+            className="
+      text-lg md:text-2xl
+      font-bold tracking-tight
+      text-white
+      truncate
+      leading-none
+    "
+          >
+            {boardDetail?.name || ""}
+          </h1>
         </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <div className="flex items-center pl-2 border-l border-white/10">
-            <Avatar.Group className="mr-3">
+            <Avatar.Group className="mr-2">
               {members.slice(0, 3).map((member) => (
                 <Avatar
                   key={member.id}
@@ -285,7 +302,6 @@ export default function TaskFlowApp() {
                   }
                   alt={member.name}
                   size="sm"
-                  color="blue"
                   className="border-2 border-[#1a1a1a]"
                 >
                   {!member.avatar && member.name?.charAt(0).toUpperCase()}
@@ -302,32 +318,41 @@ export default function TaskFlowApp() {
               )}
             </Avatar.Group>
           </div>
-          <Button
-            variant="gradient"
-            className="bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20 h-8 px-4 text-sm font-medium border-0"
-            leftSection={<IconFilter size={14} />}
-          >
-            Lọc
-          </Button>
 
           <Button
-            leftSection={<IconPlus size={16} />}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               open();
             }}
-            variant="gradient"
-            className="bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20 h-8 px-4 text-sm font-medium border-0"
+            className="
+        h-8
+        px-2 sm:px-4
+        bg-blue-600 hover:bg-blue-500
+        text-white
+        shadow-lg shadow-blue-500/20
+        border-0
+        flex items-center justify-center
+      "
           >
-            Chia sẻ
+            <IconShare3 size={16} className="sm:mr-2" />
+            <span className="hidden sm:inline text-sm font-medium">
+              Chia sẻ
+            </span>
           </Button>
 
-          <div className="flex items-center gap-1 ml-1">
-            <button className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition">
-              <IconSettings size={18} />
-            </button>
-          </div>
+          <button
+            className="
+      p-2
+      text-white/60 hover:text-white
+      hover:bg-white/10
+      rounded-full
+      transition
+      flex-shrink-0
+    "
+          >
+            <IconSettings size={18} />
+          </button>
         </div>
       </header>
 

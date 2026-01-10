@@ -5,14 +5,10 @@ import {
   TextInput,
   Select,
   Button,
-  Badge,
-  CopyButton,
-  Tooltip,
-  ActionIcon,
   Divider,
   Group,
 } from "@mantine/core";
-import { IconLink, IconCheck, IconCopy, IconAt } from "@tabler/icons-react";
+import { IconAt } from "@tabler/icons-react";
 import UserRow from "./UserRow";
 import type { Member } from "../../types/Member";
 import { useForm } from "@mantine/form";
@@ -64,7 +60,6 @@ const ShareModal: React.FC<ShareModalProps> = ({
         autoClose: 2000,
       });
 
-      // Reset form after success
       form.reset();
       setLoading(false);
     } catch (error: any) {
@@ -119,10 +114,11 @@ const ShareModal: React.FC<ShareModalProps> = ({
             <Text size="sm" fw={500} c="dimmed">
               Mời qua email
             </Text>
-            <div className="flex gap-2">
+
+            <div className="flex flex-col sm:flex-row gap-2">
               <TextInput
                 placeholder="Nhập địa chỉ email..."
-                className="flex-1"
+                className="flex-1 w-full"
                 size="md"
                 radius="md"
                 {...form.getInputProps("email")}
@@ -133,7 +129,7 @@ const ShareModal: React.FC<ShareModalProps> = ({
                   { value: "editor", label: "Editor" },
                   { value: "viewer", label: "Viewer" },
                 ]}
-                w={110}
+                className="w-full sm:w-[110px]"
                 size="md"
                 radius="md"
                 {...form.getInputProps("role")}
@@ -149,54 +145,13 @@ const ShareModal: React.FC<ShareModalProps> = ({
                 size="md"
                 type="submit"
                 loading={loading}
+                className="w-full sm:w-auto"
               >
                 Mời
               </Button>
             </div>
           </div>
         </form>
-
-        <div className="flex flex-col gap-2">
-          <div className="flex justify-between items-center">
-            <Text size="sm" fw={500} c="dimmed">
-              Liên kết công khai
-            </Text>
-            <Badge color="teal" variant="light" size="sm">
-              Đang bật
-            </Badge>
-          </div>
-
-          <div className="flex items-center gap-2 p-3 rounded-md bg-blue-50 border border-blue-200 justify-between transition-colors hover:border-blue-300">
-            <div className="flex items-center gap-3 overflow-hidden">
-              <div className="bg-blue-100 p-1.5 rounded text-blue-600">
-                <IconLink size={18} />
-              </div>
-              <Text size="sm" truncate className="text-blue-900 font-medium">
-                https://taskflow.com/b/project-x
-              </Text>
-            </div>
-
-            <CopyButton value="https://taskflow.com/b/project-x" timeout={2000}>
-              {({ copied, copy }) => (
-                <Tooltip
-                  label={copied ? "Đã sao chép" : "Sao chép link"}
-                  withArrow
-                  position="top"
-                  color={copied ? "teal" : "blue"}
-                >
-                  <ActionIcon
-                    color={copied ? "teal" : "blue"}
-                    variant={copied ? "filled" : "light"}
-                    onClick={copy}
-                    size="lg"
-                  >
-                    {copied ? <IconCheck size={18} /> : <IconCopy size={18} />}
-                  </ActionIcon>
-                </Tooltip>
-              )}
-            </CopyButton>
-          </div>
-        </div>
 
         <Divider color="gray.2" />
 
@@ -231,20 +186,31 @@ const ShareModal: React.FC<ShareModalProps> = ({
       </div>
 
       <style>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: #e5e7eb;
-          border-radius: 20px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background-color: #d1d5db;
-        }
-      `}</style>
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.5); /* gray-400 */
+    border-radius: 9999px;
+    min-height: 32px;
+    transition: background-color 0.2s ease;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(107, 114, 128, 0.7); /* gray-500 */
+  }
+
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+  }
+`}</style>
     </Modal>
   );
 };

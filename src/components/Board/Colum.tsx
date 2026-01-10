@@ -64,14 +64,14 @@ export const Column: React.FC<ColumnProps> = ({
   return (
     <div
       ref={setNodeRef}
-      className={`flex flex-col w-80 min-w-[320px] h-full max-h-full rounded-xl transition-colors duration-200 pb-2 
+      className={`flex flex-col w-[calc(100vw-48px)] sm:w-80 sm:min-w-[320px] h-fit max-h-[85vh] sm:max-h-full rounded-xl transition-colors duration-200 pb-2 shrink-0
       ${
         isOver
           ? "bg-blue-100/50 border-2 border-blue-400"
           : "bg-gray-100/80 border-2 border-transparent"
       }`}
     >
-      <div className="flex items-center justify-between p-3 cursor-grab active:cursor-grabbing">
+      <div className="flex items-center justify-between p-3 cursor-grab active:cursor-grabbing shrink-0">
         {isEditingTitle ? (
           <input
             autoFocus
@@ -92,7 +92,7 @@ export const Column: React.FC<ColumnProps> = ({
               {column.title}
             </h3>
             {tasks.length > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-xs bg-gray-300 text-gray-700 font-medium">
+              <span className="px-2 py-0.5 rounded-full text-xs bg-gray-300 text-gray-700 font-medium shrink-0">
                 {tasks.length}
               </span>
             )}
@@ -100,26 +100,21 @@ export const Column: React.FC<ColumnProps> = ({
         )}
       </div>
 
-      {tasks.length > 0 && (
-        <div className="flex-1 flex flex-col gap-2 px-2 overflow-y-auto overflow-x-hidden custom-scroll">
-          <SortableContext
-            items={taskIds}
-            strategy={verticalListSortingStrategy}
-          >
-            {tasks.map((task) => (
-              <SortableTask
-                key={task.id}
-                task={task}
-                onDelete={() => onDeleteTask(column.id, task.id)}
-                onClick={() => onTaskClick(task)}
-                isDragging={activeId === task.id}
-              />
-            ))}
-          </SortableContext>
-        </div>
-      )}
+      <div className="flex-1 flex flex-col gap-2 px-2 overflow-y-auto overflow-x-hidden custom-scroll min-h-[10px]">
+        <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+          {tasks.map((task) => (
+            <SortableTask
+              key={task.id}
+              task={task}
+              onDelete={() => onDeleteTask(column.id, task.id)}
+              onClick={() => onTaskClick(task)}
+              isDragging={activeId === task.id}
+            />
+          ))}
+        </SortableContext>
+      </div>
 
-      <div className="px-2 mt-2">
+      <div className="px-2 mt-2 shrink-0">
         {!isAdding ? (
           <button
             onClick={() => setIsAdding(true)}

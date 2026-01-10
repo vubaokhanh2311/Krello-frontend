@@ -276,64 +276,70 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
       scrollAreaComponent={ScrollArea.Autosize}
       styles={{ body: { backgroundColor: "white" } }}
     >
-      <div className="flex items-center justify-between px-6 py-4 border-b">
-        <h1 className="text-2xl font-semibold text-gray-900">{columnTitle}</h1>
+      <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b">
+        <h1 className="text-xl md:text-2xl font-semibold text-gray-900 truncate pr-4">
+          {columnTitle}
+        </h1>
 
         <button
           onClick={onClose}
-          className="text-gray-700 hover:bg-gray-200 p-2 rounded-full"
+          className="text-gray-700 hover:bg-gray-200 p-2 rounded-full shrink-0"
         >
-          ✕
+          <IconX size={24} />
         </button>
       </div>
 
-      <div className="grid grid-cols-12 min-h-[70vh]">
-        <div className="col-span-7 p-8 space-y-8">
+      {/* Grid Layout: 1 cột trên mobile, 12 cột trên màn hình lớn (lg) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[70vh]">
+        {/* Cột Trái (Chi tiết Task): Chiếm full trên mobile, 7/12 trên desktop */}
+        <div className="lg:col-span-7 p-4 md:p-8 space-y-6 md:space-y-8">
           <div
-            className="flex items-center gap-3 cursor-text"
+            className="flex items-start gap-3 cursor-text"
             onClick={() => !isEditingTitle && setIsEditingTitle(true)}
           >
             <div
-              className="w-4 h-4 rounded-full border-2 border-gray-600 shrink-0"
+              className="w-4 h-4 rounded-full border-2 border-gray-600 shrink-0 mt-1.5"
               onClick={(e) => e.stopPropagation()}
             />
 
-            {isEditingTitle ? (
-              <input
-                autoFocus
-                value={titleValue}
-                onChange={(e) => setTitleValue(e.target.value)}
-                onBlur={() => {
-                  const newTitle = titleValue.trim();
-                  if (newTitle !== task.title.trim())
-                    onSaveTitle(task.id, newTitle);
-                  setIsEditingTitle(false);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
+            <div className="flex-1 min-w-0">
+              {isEditingTitle ? (
+                <input
+                  autoFocus
+                  value={titleValue}
+                  onChange={(e) => setTitleValue(e.target.value)}
+                  onBlur={() => {
                     const newTitle = titleValue.trim();
                     if (newTitle !== task.title.trim())
                       onSaveTitle(task.id, newTitle);
                     setIsEditingTitle(false);
-                  }
-                  if (e.key === "Escape") {
-                    setTitleValue(task.title);
-                    setIsEditingTitle(false);
-                  }
-                }}
-                className="w-full text-lg font-bold text-gray-900 border-2 border-blue-500 rounded px-2 py-2 bg-white"
-              />
-            ) : (
-              <h2 className="text-2xl font-semibold text-gray-900 w-full">
-                {task.title}
-              </h2>
-            )}
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const newTitle = titleValue.trim();
+                      if (newTitle !== task.title.trim())
+                        onSaveTitle(task.id, newTitle);
+                      setIsEditingTitle(false);
+                    }
+                    if (e.key === "Escape") {
+                      setTitleValue(task.title);
+                      setIsEditingTitle(false);
+                    }
+                  }}
+                  className="w-full text-lg font-bold text-gray-900 border-2 border-blue-500 rounded px-2 py-1 bg-white"
+                />
+              ) : (
+                <h2 className="text-xl md:text-2xl font-semibold text-gray-900 w-full break-words">
+                  {task.title}
+                </h2>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-6">
             {taskLabels.length > 0 && (
               <div className="">
-                <div className="flex items-center gap-2 shrink-0 mb-3">
+                <div className="flex items-center gap-2 shrink-0 mb-2">
                   <IconTag size={18} className="text-gray-700" />
                   <h3 className="text-sm font-semibold text-gray-700">Nhãn</h3>
                 </div>
@@ -354,7 +360,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 
             {taskMembers.length > 0 && (
               <div className="">
-                <div className=" flex items-center gap-2 shrink-0 mb-3">
+                <div className=" flex items-center gap-2 shrink-0 mb-2">
                   <IconUser size={18} className="text-gray-700" />
                   <h3 className="text-sm font-semibold text-gray-700">
                     Thành viên
@@ -385,7 +391,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 
             {dueDate && (
               <div className=" ">
-                <div className="flex items-center gap-2 shrink-0 mb-3">
+                <div className="flex items-center gap-2 shrink-0 mb-2">
                   <IconCalendar size={18} className="text-gray-700" />
                   <h3 className="text-sm font-semibold text-gray-700">
                     Ngày hết hạn
@@ -408,7 +414,9 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
           <div className="flex flex-wrap gap-2 mb-4">
             <Popover position="bottom-start" shadow="md">
               <Popover.Target>
-                <Button leftSection={<IconPlus size={16} />}>Nhãn</Button>
+                <Button size="sm" leftSection={<IconPlus size={16} />}>
+                  Nhãn
+                </Button>
               </Popover.Target>
 
               <Popover.Dropdown>
@@ -424,7 +432,9 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 
             <Popover position="bottom-start" shadow="md">
               <Popover.Target>
-                <Button leftSection={<IconUser size={16} />}>Thành viên</Button>
+                <Button size="sm" leftSection={<IconUser size={16} />}>
+                  Thành viên
+                </Button>
               </Popover.Target>
 
               <Popover.Dropdown>
@@ -439,7 +449,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             </Popover>
             <Popover shadow="md" position="bottom-start">
               <Popover.Target>
-                <Button leftSection={<IconCalendar size={16} />}>
+                <Button size="sm" leftSection={<IconCalendar size={16} />}>
                   {dueDate ? "Ngày hết hạn" : "Thêm ngày hết hạn"}
                 </Button>
               </Popover.Target>
@@ -454,9 +464,16 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               </Popover.Dropdown>
             </Popover>
 
-            <FileButton onChange={(file) => file && handleFileUpload(file)} accept="*">
+            <FileButton
+              onChange={(file) => file && handleFileUpload(file)}
+              accept="*"
+            >
               {(props) => (
-                <Button {...props} leftSection={<IconPaperclip size={16} />}>
+                <Button
+                  {...props}
+                  size="sm"
+                  leftSection={<IconPaperclip size={16} />}
+                >
                   Đính kèm
                 </Button>
               )}
@@ -632,7 +649,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             ) : (
               <div
                 onClick={() => setIsEditingDesc(true)}
-                className="rounded-lg p-4 text-gray-700 cursor-text hover:bg-gray-50 whitespace-pre-line border border-gray-300"
+                className="rounded-lg p-4 text-gray-700 cursor-text hover:bg-gray-50 whitespace-pre-line border border-gray-300 min-h-[100px]"
               >
                 {description?.trim()
                   ? description
@@ -642,7 +659,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
           </div>
         </div>
 
-        <div className="col-span-5 border-l bg-gray-50 p-8 space-y-6">
+        <div className="lg:col-span-5 border-t lg:border-t-0 lg:border-l border-gray-200 bg-gray-50 p-4 md:p-8 space-y-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <IconMessageCircle size={20} className="text-gray-700" />
@@ -650,7 +667,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 Nhận xét & hoạt động
               </h2>
             </div>
-            <Button variant="subtle" color="gray">
+            <Button variant="subtle" color="gray" size="sm">
               Hiện chi tiết
             </Button>
           </div>
@@ -692,7 +709,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               </div>
             </div>
 
-            <div className="space-y-4 max-h-[400px] overflow-y-auto">
+            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
               {taskComments.length === 0 ? (
                 <p className="text-sm text-gray-500 text-center py-4">
                   Chưa có bình luận nào
@@ -717,7 +734,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                           comment.user?.name?.charAt(0).toUpperCase()}
                       </Avatar>
 
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         {editingCommentId === comment.id ? (
                           <div className="space-y-2">
                             <Textarea
@@ -748,13 +765,13 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                             </div>
                           </div>
                         ) : (
-                          <div className="bg-white rounded-lg p-3 shadow-sm">
+                          <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
                             <div className="flex items-start justify-between">
-                              <div className="flex-1">
+                              <div className="flex-1 min-w-0">
                                 <p className="text-sm font-semibold text-gray-800">
                                   {comment.user?.name || "Người dùng ẩn danh"}
                                 </p>
-                                <p className="text-sm text-gray-700 mt-1 whitespace-pre-wrap">
+                                <p className="text-sm text-gray-700 mt-1 whitespace-pre-wrap break-words">
                                   {comment.content}
                                 </p>
                                 <p className="text-xs text-gray-500 mt-2">
@@ -764,7 +781,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                                 </p>
                               </div>
                               {isMyComment && (
-                                <div className="flex gap-1 ml-2">
+                                <div className="flex gap-1 ml-2 shrink-0">
                                   <button
                                     onClick={() => startEditing(comment)}
                                     className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"

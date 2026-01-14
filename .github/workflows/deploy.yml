@@ -1,4 +1,4 @@
-name: Deploy React Vite (DEV)
+name: Deploy NestJS Backend (DEV)
 
 on:
   push:
@@ -10,24 +10,11 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build project
-        run: npm run build
-
-      - name: Deploy & restart PM2
+      - name: Deploy backend
         run: |
-          cd /home/ubuntu/trello-frontend
+          set -e
+          cd /home/ubuntu/krello-server
           git pull origin dev
-          npm install
+          npm ci
           npm run build
-          pm2 restart trello-frontend
+          pm2 restart krello-api

@@ -1,4 +1,4 @@
-name: Deploy React Vite to Server
+name: Deploy React Vite (DEV)
 
 on:
   push:
@@ -7,13 +7,13 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -24,22 +24,10 @@ jobs:
       - name: Build project
         run: npm run build
 
-      - name: Copy build to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          port: ${{ secrets.SSH_PORT }}
-          key: ${{ secrets.SSH_KEY }}
-          source: "dist/*"
-          target: "/var/www/trello-frontend/dist"
-
-      - name: Restart PM2
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          port: ${{ secrets.SSH_PORT }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            pm2 restart trello-frontend
+      - name: Deploy & restart PM2
+        run: |
+          cd /home/ubuntu/trello-frontend
+          git pull origin dev
+          npm install
+          npm run build
+          pm2 restart trello-frontend

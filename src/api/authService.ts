@@ -10,10 +10,16 @@ import type {
   ResetPasswordRequest,
   ResetPasswordResponse,
 } from "../types/PasswordType";
-import { removeFcmToken } from "../api/notificationService";
+
+import { getDeviceId } from "../utils/device";
 
 export async function login(values: LoginRequest): Promise<LoginResponse> {
-  const res = await RestClient.post<LoginResponse>("/auth/login", values);
+  const res = await RestClient.post<LoginResponse>("/auth/login", {
+    ...values,
+    platform: "web",
+    deviceId: getDeviceId(),
+    fcmToken: localStorage.getItem("fcm_token"),
+  });
 
   return res;
 }
@@ -30,7 +36,11 @@ export async function loginWithGoogle(
 ): Promise<LoginResponse> {
   const res = await RestClient.post<LoginResponse>("/auth/google", {
     googleToken,
+    platform: "web",
+    deviceId: getDeviceId(),
+    fcmToken: localStorage.getItem("fcm_token"),
   });
+
   return res;
 }
 
@@ -41,17 +51,19 @@ export async function getUserProfile(): Promise<UserProfile> {
 
 export const logout = async () => {
   try {
-    const token = localStorage.getItem("fcm_token");
-    if (token) {
-      await removeFcmToken(token);
+    await RestClient.post("/auth/logout");
+
+    const fcmToken = localStorage.getItem("fcm_token");
+    if (fcmToken) {
       localStorage.removeItem("fcm_token");
     }
   } catch (e) {
-    console.warn("remove fcm token failed", e);
+    console.warn("logout failed", e);
   } finally {
     socketService.disconnect();
     useUserStore.getState().clearUser();
     RestClient.clearTokens();
+
     window.location.href = "/login";
   }
 };

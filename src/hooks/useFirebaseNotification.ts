@@ -1,21 +1,17 @@
 import { useEffect, useRef } from "react";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 import { firebaseApp } from "../firebase/firebase";
-import { saveFcmToken } from "../api/notificationService";
-import { useUserStore } from "../stores/userStore";
+
 import { notifications } from "@mantine/notifications";
 
 const PERMISSION_KEY = "fcm_permission_requested";
 const FCM_TOKEN_KEY = "fcm_token";
 
 export const useFirebaseNotification = () => {
-  const accessToken = useUserStore((s) => s.accessToken);
   const isInitialized = useRef(false);
 
   useEffect(() => {
-    if (!accessToken) return;
     if (isInitialized.current) return;
-
     isInitialized.current = true;
 
     let unsubscribe: (() => void) | undefined;
@@ -44,7 +40,6 @@ export const useFirebaseNotification = () => {
         const savedToken = localStorage.getItem(FCM_TOKEN_KEY);
 
         if (savedToken !== token) {
-          await saveFcmToken(token);
           localStorage.setItem(FCM_TOKEN_KEY, token);
         }
       }
@@ -64,5 +59,5 @@ export const useFirebaseNotification = () => {
     return () => {
       unsubscribe?.();
     };
-  }, [accessToken]);
+  }, []);
 };

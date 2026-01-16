@@ -20,6 +20,7 @@ messaging.onBackgroundMessage((payload) => {
     payload.notification?.title ?? "Notification",
     {
       body: payload.notification?.body,
+      icon: self.location.origin + "/logo.png",
       data: payload.data,
     }
   );

@@ -5,8 +5,10 @@ import { publicRoute, privateRoute } from "./routes";
 import { DefaultLayout } from "./components/Layout";
 import RequireAuth from "./middleware/RequireAuth";
 import NotFound from "./pages/NotFound";
+import { useFirebaseNotification } from "./hooks/useFirebaseNotification";
 
 function App() {
+  useFirebaseNotification();
   return (
     <Router>
       <Routes>

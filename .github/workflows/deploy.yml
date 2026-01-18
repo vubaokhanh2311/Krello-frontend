@@ -30,4 +30,4 @@ jobs:
       - name: Deploy to FE VM
         run: |
           rsync -avz --delete dist/ \
-          ubuntu@FE_VM_IP:/var/www/trello-frontend
+          fe_vm:/var/www/trello-frontend

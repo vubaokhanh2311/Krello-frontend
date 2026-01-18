@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: self-hosted
+    runs-on: [self-hosted, build]
 
     steps:
       - name: Checkout code
@@ -19,15 +19,12 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build project
         run: npm run build
 
-      - name: Deploy & restart PM2
+      - name: Deploy to FE VM
         run: |
-          cd /home/ubuntu/trello-frontend
-          git pull origin dev
-          npm install
-          npm run build
-          pm2 restart trello-frontend
+          rsync -avz --delete dist/ \
+          ubuntu@FE_VM_IP:/var/www/trello-frontend

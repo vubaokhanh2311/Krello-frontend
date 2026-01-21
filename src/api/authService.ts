@@ -25,14 +25,14 @@ export async function login(values: LoginRequest): Promise<LoginResponse> {
 }
 
 export async function register(
-  values: RegistrerRequest
+  values: RegistrerRequest,
 ): Promise<RegisterResponse> {
   const res = await RestClient.post<RegisterResponse>("/auth/register", values);
   return res;
 }
 
 export async function loginWithGoogle(
-  googleToken: string
+  googleToken: string,
 ): Promise<LoginResponse> {
   const res = await RestClient.post<LoginResponse>("/auth/google", {
     googleToken,
@@ -52,15 +52,15 @@ export async function getUserProfile(): Promise<UserProfile> {
 export const logout = async () => {
   try {
     await RestClient.post("/auth/logout");
-
-    const fcmToken = localStorage.getItem("fcm_token");
-    if (fcmToken) {
-      localStorage.removeItem("fcm_token");
-    }
   } catch (e) {
     console.warn("logout failed", e);
   } finally {
     socketService.disconnect();
+
+    localStorage.removeItem("accessToken");
+    sessionStorage.removeItem("accessToken");
+    localStorage.removeItem("fcm_token");
+
     useUserStore.getState().clearUser();
     RestClient.clearTokens();
 
@@ -69,21 +69,21 @@ export const logout = async () => {
 };
 
 export async function forgotPassword(
-  values: ForgotPasswordRequest
+  values: ForgotPasswordRequest,
 ): Promise<ForgotPasswordResponse> {
   const res = await RestClient.post<ForgotPasswordResponse>(
     "/auth/forgot-password",
-    values
+    values,
   );
   return res;
 }
 
 export async function resetPassword(
-  values: ResetPasswordRequest
+  values: ResetPasswordRequest,
 ): Promise<ResetPasswordResponse> {
   const res = await RestClient.post<ResetPasswordResponse>(
     "/auth/reset-password",
-    values
+    values,
   );
   return res;
 }

@@ -4,9 +4,11 @@ import { MantineProvider } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
 import { ModalsProvider } from "@mantine/modals";
 import "@mantine/notifications/styles.css";
-import App from "./App.tsx";
-import "./index.css";
 import "@mantine/core/styles.css";
+
+import App from "./App";
+import "./index.css";
+import AuthInitializer from "./auth/AuthInitializer";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -20,8 +22,10 @@ createRoot(document.getElementById("root")!).render(
     >
       <Notifications position="top-right" />
       <ModalsProvider>
-        <App />
+        <AuthInitializer>
+          <App />
+        </AuthInitializer>
       </ModalsProvider>
     </MantineProvider>
-  </StrictMode>
+  </StrictMode>,
 );

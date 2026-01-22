@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-
 import type { UserState } from "../types/UserProfileType";
 
 export const useUserStore = create<UserState>()(
@@ -9,11 +8,28 @@ export const useUserStore = create<UserState>()(
       user: null,
       accessToken: null,
       refreshToken: null,
+
       setUser: (user, accessToken, refreshToken) =>
-        set({ user, accessToken, refreshToken }),
+        set({
+          user,
+          accessToken,
+          refreshToken,
+        }),
+
       clearUser: () =>
-        set({ user: null, accessToken: null, refreshToken: null }),
+        set({
+          user: null,
+          accessToken: null,
+          refreshToken: null,
+        }),
     }),
-    { name: "user-storage" }
-  )
+    {
+      name: "user-storage",
+      partialize: (state) => ({
+        user: state.user,
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
+      }),
+    },
+  ),
 );

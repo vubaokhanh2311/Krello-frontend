@@ -1,27 +1,28 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { type ReactNode, useEffect, useState } from "react";
 import { notifications } from "@mantine/notifications";
+import RestClient from "../api/RestClient";
 
 interface Props {
   children: ReactNode;
 }
 
 const RequireAuth = ({ children }: Props) => {
-  const token = localStorage.getItem("accessToken");
+  const token = RestClient.getToken();
   const location = useLocation();
-  const [showNotification, setShowNotification] = useState(false);
+  const [notified, setNotified] = useState(false);
 
   useEffect(() => {
-    if (!token && !showNotification) {
+    if (!token && !notified) {
       notifications.show({
         title: "Cần đăng nhập",
         message: "Vui lòng đăng nhập để truy cập trang này!",
         color: "yellow",
         autoClose: 3000,
       });
-      setShowNotification(true);
+      setNotified(true);
     }
-  }, [token, showNotification]);
+  }, [token, notified]);
 
   if (!token) {
     return <Navigate to="/login" state={{ from: location }} replace />;

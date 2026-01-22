@@ -18,6 +18,7 @@ interface ApiError {
 
 interface RefreshTokenResponse {
   accessToken: string;
+  refreshToken: string;
 }
 
 class RestClient {
@@ -40,6 +41,53 @@ class RestClient {
     this.setupInterceptors();
   }
 
+  private isRemember(): boolean {
+    return !!localStorage.getItem("refreshToken");
+  }
+
+  getToken() {
+    return (
+      sessionStorage.getItem("accessToken") ||
+      localStorage.getItem("accessToken")
+    );
+  }
+
+  getRefreshToken() {
+    return (
+      sessionStorage.getItem("refreshToken") ||
+      localStorage.getItem("refreshToken")
+    );
+  }
+
+  setToken(token: string) {
+    localStorage.removeItem("accessToken");
+    sessionStorage.removeItem("accessToken");
+
+    if (this.isRemember()) {
+      localStorage.setItem("accessToken", token);
+    } else {
+      sessionStorage.setItem("accessToken", token);
+    }
+  }
+
+  setRefreshToken(token: string) {
+    localStorage.removeItem("refreshToken");
+    sessionStorage.removeItem("refreshToken");
+
+    if (this.isRemember()) {
+      localStorage.setItem("refreshToken", token);
+    } else {
+      sessionStorage.setItem("refreshToken", token);
+    }
+  }
+
+  clearTokens() {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    sessionStorage.removeItem("accessToken");
+    sessionStorage.removeItem("refreshToken");
+  }
+
   private setupInterceptors() {
     this.client.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
@@ -49,9 +97,7 @@ class RestClient {
         }
         return config;
       },
-      (error: AxiosError) => {
-        return Promise.reject(error);
-      }
+      (error) => Promise.reject(error),
     );
 
     this.client.interceptors.response.use(
@@ -64,7 +110,7 @@ class RestClient {
         const isAuthEndpoint =
           originalRequest.url?.includes("/auth/login") ||
           originalRequest.url?.includes("/auth/register") ||
-          originalRequest.url?.includes("/auth/refresh");
+          originalRequest.url?.includes("/auth/refresh-token");
 
         if (
           error.response?.status === 401 &&
@@ -74,16 +120,12 @@ class RestClient {
           if (this.isRefreshing) {
             return new Promise((resolve, reject) => {
               this.failedQueue.push({ resolve, reject });
-            })
-              .then((token) => {
-                if (originalRequest.headers) {
-                  originalRequest.headers.Authorization = `Bearer ${token}`;
-                }
-                return this.client(originalRequest);
-              })
-              .catch((err) => {
-                return Promise.reject(err);
-              });
+            }).then((token) => {
+              if (originalRequest.headers) {
+                originalRequest.headers.Authorization = `Bearer ${token}`;
+              }
+              return this.client(originalRequest);
+            });
           }
 
           originalRequest._retry = true;
@@ -96,6 +138,7 @@ class RestClient {
             if (originalRequest.headers) {
               originalRequest.headers.Authorization = `Bearer ${newToken}`;
             }
+
             return this.client(originalRequest);
           } catch (refreshError) {
             this.processQueue(refreshError, null);
@@ -107,17 +150,14 @@ class RestClient {
         }
 
         return Promise.reject(this.handleError(error));
-      }
+      },
     );
   }
 
-  private processQueue(error: any, token: string | null = null) {
-    this.failedQueue.forEach((promise) => {
-      if (error) {
-        promise.reject(error);
-      } else {
-        promise.resolve(token);
-      }
+  private processQueue(error: any, token: string | null) {
+    this.failedQueue.forEach((p) => {
+      if (error) p.reject(error);
+      else p.resolve(token);
     });
     this.failedQueue = [];
   }
@@ -125,27 +165,27 @@ class RestClient {
   private async refreshAccessToken(): Promise<string> {
     const refreshToken = this.getRefreshToken();
     if (!refreshToken) {
-      throw new Error("No refresh token available");
+      throw new Error("No refresh token");
     }
 
-    try {
-      const response = await axios.post<RefreshTokenResponse>(
-        `${API_BASE_URL}/auth/refresh`,
-        { refreshToken }
-      );
+    const response = await axios.post<RefreshTokenResponse>(
+      `${API_BASE_URL}/auth/refresh-token`,
+      { refreshToken },
+    );
 
-      const { accessToken } = response.data;
-      this.setToken(accessToken);
-      return accessToken;
-    } catch (error) {
-      this.clearTokens();
-      throw error;
-    }
+    const { accessToken, refreshToken: newRefreshToken } = response.data;
+
+    this.setToken(accessToken);
+    this.setRefreshToken(newRefreshToken);
+
+    this.client.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
+
+    return accessToken;
   }
 
   private handleLogout() {
     this.clearTokens();
-    toast.error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại!");
+    toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!");
 
     setTimeout(() => {
       window.location.href = "/login";
@@ -154,182 +194,53 @@ class RestClient {
 
   private handleError(error: AxiosError<ApiError>): ApiError {
     if (error.response) {
-      const { status, data } = error.response;
-
-      switch (status) {
-        case 400:
-          return {
-            message: data.message || "Dữ liệu không hợp lệ",
-            statusCode: status,
-            errors: data.errors,
-          };
-
-        case 401:
-          return {
-            message: data.message || "Email hoặc mật khẩu không chính xác",
-            statusCode: status,
-          };
-
-        case 403:
-          return {
-            message:
-              data.message || "Bạn không có quyền thực hiện hành động này",
-            statusCode: status,
-          };
-
-        case 404:
-          return {
-            message: data.message || "Không tìm thấy dữ liệu",
-            statusCode: status,
-          };
-
-        case 409:
-          return {
-            message: data.message || "Dữ liệu đã tồn tại",
-            statusCode: status,
-          };
-
-        case 422:
-          return {
-            message: data.message || "Không thể xử lý dữ liệu",
-            statusCode: status,
-            errors: data.errors,
-          };
-
-        case 429:
-          return {
-            message: "Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau!",
-            statusCode: status,
-          };
-
-        case 500:
-          return {
-            message: "Lỗi server. Vui lòng thử lại sau!",
-            statusCode: status,
-          };
-
-        case 503:
-          return {
-            message: "Dịch vụ tạm thời không khả dụng. Vui lòng thử lại sau!",
-            statusCode: status,
-          };
-
-        default:
-          return {
-            message: data.message || "Có lỗi xảy ra. Vui lòng thử lại!",
-            statusCode: status,
-          };
-      }
-    } else if (error.request) {
-      if (error.code === "ECONNABORTED") {
-        return {
-          message: "Yêu cầu quá thời gian chờ. Vui lòng thử lại!",
-          statusCode: 0,
-        };
-      }
       return {
-        message:
-          "Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng!",
-        statusCode: 0,
-      };
-    } else {
-      return {
-        message: error.message || "Có lỗi xảy ra khi gửi yêu cầu",
-        statusCode: 0,
+        message: error.response.data?.message || "Có lỗi xảy ra",
+        statusCode: error.response.status,
+        errors: error.response.data?.errors,
       };
     }
-  }
 
-  getToken(): string | null {
-    return localStorage.getItem("accessToken");
-  }
+    if (error.code === "ECONNABORTED") {
+      return { message: "Request timeout", statusCode: 0 };
+    }
 
-  getRefreshToken(): string | null {
-    return localStorage.getItem("refreshToken");
-  }
-
-  setToken(token: string): void {
-    localStorage.setItem("accessToken", token);
-  }
-
-  setRefreshToken(token: string): void {
-    localStorage.setItem("refreshToken", token);
-  }
-
-  clearTokens(): void {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
+    return {
+      message: "Không thể kết nối server",
+      statusCode: 0,
+    };
   }
 
   async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    const response: AxiosResponse<T> = await this.client.get(url, config);
-    return response.data;
+    return (await this.client.get<T>(url, config)).data;
   }
 
   async post<T>(
     url: string,
     data?: any,
-    config?: AxiosRequestConfig
+    config?: AxiosRequestConfig,
   ): Promise<T> {
-    const response: AxiosResponse<T> = await this.client.post(
-      url,
-      data,
-      config
-    );
-    return response.data;
+    return (await this.client.post<T>(url, data, config)).data;
   }
 
   async put<T>(
     url: string,
     data?: any,
-    config?: AxiosRequestConfig
+    config?: AxiosRequestConfig,
   ): Promise<T> {
-    const response: AxiosResponse<T> = await this.client.put(url, data, config);
-    return response.data;
+    return (await this.client.put<T>(url, data, config)).data;
   }
 
   async patch<T>(
     url: string,
     data?: any,
-    config?: AxiosRequestConfig
+    config?: AxiosRequestConfig,
   ): Promise<T> {
-    const response: AxiosResponse<T> = await this.client.patch(
-      url,
-      data,
-      config
-    );
-    return response.data;
+    return (await this.client.patch<T>(url, data, config)).data;
   }
 
   async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    const response: AxiosResponse<T> = await this.client.delete(url, config);
-    return response.data;
-  }
-
-  async del<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    return this.delete<T>(url, config);
-  }
-
-  async upload<T>(url: string, formData: FormData): Promise<T> {
-    const response: AxiosResponse<T> = await this.client.post(url, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-    return response.data;
-  }
-
-  async download(url: string, filename: string): Promise<void> {
-    const response = await this.client.get(url, {
-      responseType: "blob",
-    });
-
-    const blob = new Blob([response.data]);
-    const link = document.createElement("a");
-    link.href = window.URL.createObjectURL(blob);
-    link.download = filename;
-    link.click();
-    window.URL.revokeObjectURL(link.href);
+    return (await this.client.delete<T>(url, config)).data;
   }
 }
 

@@ -11,7 +11,6 @@ import {
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
-import RestClient from "../../../api/RestClient";
 import type { LoginRequest } from "../../../types/LoginType";
 import validateLogin from "../../../utils/LoginValidation";
 import {
@@ -48,7 +47,9 @@ export default function LoginForm() {
       const res = await loginWithGoogle(credential);
       if (!res) throw new Error("Không nhận được phản hồi từ server");
 
-      RestClient.setToken(res.accessToken);
+      localStorage.setItem("refreshToken", res.refreshToken);
+      localStorage.setItem("accessToken", res.accessToken);
+
       const userProfile = await getUserProfile();
       setUser(userProfile, res.accessToken, res.refreshToken);
 
@@ -75,7 +76,11 @@ export default function LoginForm() {
   });
 
   const form = useForm<LoginRequest>({
-    initialValues: { email: "", password: "" },
+    initialValues: {
+      email: "",
+      password: "",
+      remember: false,
+    },
     validate: validateLogin,
   });
 
@@ -86,7 +91,15 @@ export default function LoginForm() {
       const res = await login(values);
       if (!res) throw new Error("Đăng nhập thất bại");
 
-      RestClient.setToken(res.accessToken);
+      // 🔥 QUYẾT ĐỊNH STORAGE TẠI ĐÂY
+      if (values.remember) {
+        localStorage.setItem("refreshToken", res.refreshToken);
+        localStorage.setItem("accessToken", res.accessToken);
+      } else {
+        sessionStorage.setItem("refreshToken", res.refreshToken);
+        sessionStorage.setItem("accessToken", res.accessToken);
+      }
+
       const userProfile = await getUserProfile();
       setUser(userProfile, res.accessToken, res.refreshToken);
 
@@ -129,16 +142,22 @@ export default function LoginForm() {
       </Stack>
 
       <Group justify="space-between">
-        <Checkbox label="Ghi nhớ đăng nhập" disabled={loading} />
+        <Checkbox
+          label="Ghi nhớ đăng nhập"
+          disabled={loading}
+          {...form.getInputProps("remember", { type: "checkbox" })}
+        />
+
         <Link to="/forgot-password">Quên mật khẩu?</Link>
       </Group>
 
       <Button fullWidth type="submit" loading={loading}>
         Đăng nhập
       </Button>
+
       <p className="text-sm text-slate-600 text-center">
         Bạn chưa có tài khoản?{" "}
-        <Link to="/register" className="font-semibold text-indigo-600  ">
+        <Link to="/register" className="font-semibold text-indigo-600">
           Đăng ký
         </Link>
       </p>

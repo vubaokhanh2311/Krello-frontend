@@ -12,10 +12,12 @@ export interface UserState {
   user: UserProfile | null;
   accessToken: string | null;
   refreshToken: string | null;
+
   setUser: (
     user: UserProfile,
     accessToken: string,
-    refreshToken: string
+    refreshToken: string | null,
   ) => void;
+
   clearUser: () => void;
 }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useUserStore } from "../../../stores/userStore";
 import {
   Button,
@@ -18,55 +19,54 @@ import {
   getUserProfile,
   loginWithGoogle,
 } from "../../../api/authService";
+import restClient from "../../../api/RestClient";
+import { redirectAfterLogin } from "../../../utils/redirectHelper";
 import { Link } from "react-router-dom";
 import { useGoogleLogin } from "../../../hooks/useGoogleLogin";
 
 export default function LoginForm() {
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
   const { setUser } = useUserStore.getState();
-
-  const redirectAfterLogin = () => {
-    const redirectPath = localStorage.getItem("redirectAfterLogin");
-    const inviteToken = localStorage.getItem("inviteToken");
-
-    if (redirectPath) {
-      localStorage.removeItem("redirectAfterLogin");
-      window.location.href = redirectPath;
-    } else if (inviteToken) {
-      localStorage.removeItem("inviteToken");
-      window.location.href = `/invite?token=${inviteToken}`;
-    } else {
-      window.location.href = "/";
-    }
-  };
 
   const handleGoogleLogin = async (credential: string) => {
     try {
       setLoading(true);
 
       const res = await loginWithGoogle(credential);
-      if (!res) throw new Error("Không nhận được phản hồi từ server");
 
-      localStorage.setItem("refreshToken", res.refreshToken);
-      localStorage.setItem("accessToken", res.accessToken);
+      if (!res || !res.accessToken || !res.refreshToken) {
+        throw new Error("Không nhận được token từ server");
+      }
+
+      restClient.setRememberMe(true);
+      restClient.setTokens(res.accessToken, res.refreshToken);
 
       const userProfile = await getUserProfile();
       setUser(userProfile, res.accessToken, res.refreshToken);
 
       notifications.show({
         title: "Thành công",
-        message: "Đăng nhập Google thành công",
+        message: "Đăng nhập Google thành công!",
         color: "green",
-        autoClose: 1000,
+        autoClose: 1500,
       });
 
-      setTimeout(redirectAfterLogin, 1000);
+      setTimeout(() => {
+        redirectAfterLogin(navigate);
+      }, 1000);
     } catch (err: any) {
+      console.error("Google login error:", err);
+
       notifications.show({
-        title: "Thất bại",
-        message: err?.message || "Đăng nhập Google thất bại",
+        title: "Đăng nhập thất bại",
+        message:
+          err?.response?.data?.message ||
+          err?.message ||
+          "Đăng nhập Google thất bại",
         color: "red",
       });
+
       setLoading(false);
     }
   };
@@ -89,34 +89,38 @@ export default function LoginForm() {
       setLoading(true);
 
       const res = await login(values);
-      if (!res) throw new Error("Đăng nhập thất bại");
 
-      // 🔥 QUYẾT ĐỊNH STORAGE TẠI ĐÂY
-      if (values.remember) {
-        localStorage.setItem("refreshToken", res.refreshToken);
-        localStorage.setItem("accessToken", res.accessToken);
-      } else {
-        sessionStorage.setItem("refreshToken", res.refreshToken);
-        sessionStorage.setItem("accessToken", res.accessToken);
+      if (!res || !res.accessToken || !res.refreshToken) {
+        throw new Error("Không nhận được token từ server");
       }
+
+      restClient.setRememberMe(values.remember);
+
+      restClient.setTokens(res.accessToken, res.refreshToken);
 
       const userProfile = await getUserProfile();
       setUser(userProfile, res.accessToken, res.refreshToken);
 
       notifications.show({
         title: "Thành công",
-        message: "Đăng nhập thành công",
+        message: "Đăng nhập thành công!",
         color: "green",
-        autoClose: 1000,
+        autoClose: 1500,
       });
 
-      setTimeout(redirectAfterLogin, 1000);
+      setTimeout(() => {
+        redirectAfterLogin(navigate);
+      }, 1000);
     } catch (err: any) {
+      console.error("Login error:", err);
+
       notifications.show({
-        title: "Thất bại",
-        message: err?.message || "Đăng nhập thất bại",
+        title: "Đăng nhập thất bại",
+        message:
+          err?.response?.data?.message || err?.message || "Đăng nhập thất bại",
         color: "red",
       });
+
       setLoading(false);
     }
   };
@@ -126,7 +130,7 @@ export default function LoginForm() {
       <Stack>
         <TextInput
           label="Email"
-          placeholder="Nhập email"
+          placeholder="Nhập email của bạn"
           withAsterisk
           disabled={loading}
           {...form.getInputProps("email")}
@@ -134,7 +138,7 @@ export default function LoginForm() {
 
         <PasswordInput
           label="Mật khẩu"
-          placeholder="Nhập mật khẩu"
+          placeholder="Nhập mật khẩu của bạn"
           withAsterisk
           disabled={loading}
           {...form.getInputProps("password")}
@@ -148,17 +152,25 @@ export default function LoginForm() {
           {...form.getInputProps("remember", { type: "checkbox" })}
         />
 
-        <Link to="/forgot-password">Quên mật khẩu?</Link>
+        <Link
+          to="/forgot-password"
+          className="text-sm text-indigo-600 hover:text-indigo-700"
+        >
+          Quên mật khẩu?
+        </Link>
       </Group>
 
-      <Button fullWidth type="submit" loading={loading}>
+      <Button fullWidth type="submit" loading={loading} size="md">
         Đăng nhập
       </Button>
 
       <p className="text-sm text-slate-600 text-center">
         Bạn chưa có tài khoản?{" "}
-        <Link to="/register" className="font-semibold text-indigo-600">
-          Đăng ký
+        <Link
+          to="/register"
+          className="font-semibold text-indigo-600 hover:text-indigo-700"
+        >
+          Đăng ký ngay
         </Link>
       </p>
 

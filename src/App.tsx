@@ -19,8 +19,8 @@ function App() {
             route.layout === null
               ? Fragment
               : route.layout
-              ? route.layout
-              : DefaultLayout;
+                ? route.layout
+                : DefaultLayout;
 
           return (
             <Route
@@ -41,8 +41,8 @@ function App() {
             route.layout === null
               ? Fragment
               : route.layout
-              ? route.layout
-              : DefaultLayout;
+                ? route.layout
+                : DefaultLayout;
 
           return (
             <Route

@@ -1,7 +1,8 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { notifications } from "@mantine/notifications";
 import RestClient from "../api/RestClient";
+import { saveRedirectPath } from "../utils/redirectHelper";
 
 interface Props {
   children: ReactNode;
@@ -9,22 +10,30 @@ interface Props {
 
 const RequireAuth = ({ children }: Props) => {
   const token = RestClient.getToken();
+  const refreshToken = RestClient.getRefreshToken();
   const location = useLocation();
-  const [notified, setNotified] = useState(false);
+  const hasNotified = useRef(false);
+
+  const isAuthenticated = Boolean(token && refreshToken);
 
   useEffect(() => {
-    if (!token && !notified) {
+    if (!isAuthenticated && !hasNotified.current) {
       notifications.show({
-        title: "Cần đăng nhập",
+        title: "Yêu cầu đăng nhập",
         message: "Vui lòng đăng nhập để truy cập trang này!",
         color: "yellow",
         autoClose: 3000,
       });
-      setNotified(true);
+      hasNotified.current = true;
     }
-  }, [token, notified]);
+  }, [isAuthenticated]);
 
-  if (!token) {
+  if (!isAuthenticated) {
+    const currentPath = location.pathname + location.search;
+    if (currentPath !== "/login") {
+      saveRedirectPath(currentPath);
+    }
+
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 

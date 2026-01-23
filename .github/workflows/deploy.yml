@@ -35,6 +35,6 @@ jobs:
             pnpm build
 
             echo "Restart FE"
-            pm2 restart trello-fe --update-env
+            pm2 restart trello-frontend --update-env
             pm2 save
           EOF

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUserStore } from "../../../stores/userStore";
 import {
@@ -29,47 +29,50 @@ export default function LoginForm() {
   const navigate = useNavigate();
   const { setUser } = useUserStore.getState();
 
-  const handleGoogleLogin = async (credential: string) => {
-    try {
-      setLoading(true);
+  const handleGoogleLogin = useCallback(
+    async (credential: string) => {
+      try {
+        setLoading(true);
 
-      const res = await loginWithGoogle(credential);
+        const res = await loginWithGoogle(credential);
 
-      if (!res || !res.accessToken || !res.refreshToken) {
-        throw new Error("Không nhận được token từ server");
+        if (!res || !res.accessToken || !res.refreshToken) {
+          throw new Error("Không nhận được token từ server");
+        }
+
+        restClient.setRememberMe(true);
+        restClient.setTokens(res.accessToken, res.refreshToken);
+
+        const userProfile = await getUserProfile();
+        setUser(userProfile, res.accessToken, res.refreshToken);
+
+        notifications.show({
+          title: "Thành công",
+          message: "Đăng nhập Google thành công!",
+          color: "green",
+          autoClose: 1500,
+        });
+
+        setTimeout(() => {
+          redirectAfterLogin(navigate);
+        }, 1000);
+      } catch (err: any) {
+        console.error("Google login error:", err);
+
+        notifications.show({
+          title: "Đăng nhập thất bại",
+          message:
+            err?.response?.data?.message ||
+            err?.message ||
+            "Đăng nhập Google thất bại",
+          color: "red",
+        });
+
+        setLoading(false);
       }
-
-      restClient.setRememberMe(true);
-      restClient.setTokens(res.accessToken, res.refreshToken);
-
-      const userProfile = await getUserProfile();
-      setUser(userProfile, res.accessToken, res.refreshToken);
-
-      notifications.show({
-        title: "Thành công",
-        message: "Đăng nhập Google thành công!",
-        color: "green",
-        autoClose: 1500,
-      });
-
-      setTimeout(() => {
-        redirectAfterLogin(navigate);
-      }, 1000);
-    } catch (err: any) {
-      console.error("Google login error:", err);
-
-      notifications.show({
-        title: "Đăng nhập thất bại",
-        message:
-          err?.response?.data?.message ||
-          err?.message ||
-          "Đăng nhập Google thất bại",
-        color: "red",
-      });
-
-      setLoading(false);
-    }
-  };
+    },
+    [navigate],
+  );
 
   const googleButtonRef = useGoogleLogin({
     onSuccess: handleGoogleLogin,
@@ -179,7 +182,10 @@ export default function LoginForm() {
       <div
         ref={googleButtonRef}
         className="w-full flex justify-center"
-        style={{ minHeight: 44 }}
+        style={{
+          minHeight: 44,
+          minWidth: 300,
+        }}
       />
     </form>
   );

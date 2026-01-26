@@ -15,7 +15,9 @@ interface BoardStore {
   boardsJoined: BoardTS[];
   boardsMeta: PaginationMeta | null;
   boardsJoinedMeta: PaginationMeta | null;
-  isLoading: boolean;
+
+  isLoadingBoards: boolean;
+  isLoadingBoardsJoined: boolean;
 
   fetchBoards: (page?: number) => Promise<void>;
   fetchBoardsJoined: (page?: number) => Promise<void>;
@@ -26,57 +28,57 @@ export const useBoardStore = create<BoardStore>((set) => ({
   boardsJoined: [],
   boardsMeta: null,
   boardsJoinedMeta: null,
-  isLoading: false,
+
+  isLoadingBoards: false,
+  isLoadingBoardsJoined: false,
 
   fetchBoards: async (page = 1) => {
-    try {
-      set({ isLoading: true });
+    set({ isLoadingBoards: true });
 
-      const res = await getBoard({
+    try {
+      const res = (await getBoard({
         page,
         pageSize: 8,
-      }) as { data: BoardTS[]; meta: PaginationMeta };
+      })) as { data: BoardTS[]; meta: PaginationMeta };
 
       set({
         boards: res.data,
         boardsMeta: res.meta,
-        isLoading: false,
       });
     } catch (error) {
-      set({ isLoading: false });
-
       notifications.show({
         title: "Thất bại",
         message:
           error instanceof Error ? error.message : "Kết nối server thất bại",
         color: "red",
       });
+    } finally {
+      set({ isLoadingBoards: false });
     }
   },
 
   fetchBoardsJoined: async (page = 1) => {
-    try {
-      set({ isLoading: true });
+    set({ isLoadingBoardsJoined: true });
 
-      const res = await getBoardsJoinedByUser({
+    try {
+      const res = (await getBoardsJoinedByUser({
         page,
         pageSize: 8,
-      }) as { data: BoardTS[]; meta: PaginationMeta };
+      })) as { data: BoardTS[]; meta: PaginationMeta };
 
       set({
         boardsJoined: res.data,
         boardsJoinedMeta: res.meta,
-        isLoading: false,
       });
     } catch (error) {
-      set({ isLoading: false });
-
       notifications.show({
         title: "Thất bại",
         message:
           error instanceof Error ? error.message : "Kết nối server thất bại",
         color: "red",
       });
+    } finally {
+      set({ isLoadingBoardsJoined: false });
     }
   },
 }));

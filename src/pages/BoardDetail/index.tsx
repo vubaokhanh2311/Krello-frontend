@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useMemo } from "react";
+import { useEffect, useCallback, useMemo, useState } from "react";
 import {
   DndContext,
   closestCenter,
@@ -14,7 +14,7 @@ import type {
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { IconPlus, IconX, IconShare3, IconSettings } from "@tabler/icons-react";
-import { Avatar, Button } from "@mantine/core";
+import { Avatar, Button, Loader } from "@mantine/core";
 import type { Task } from "../../types/BoardDetail";
 import { SortableTask } from "../../components/Board/SortableTask";
 import { Column } from "../../components/Board/Colum";
@@ -30,6 +30,7 @@ import { useBoardSocket } from "../../hooks/useBoardSocket";
 export default function TaskFlowApp() {
   const { id } = useParams<{ id: string }>();
   const [opened, { open, close }] = useDisclosure(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const {
     data,
@@ -74,16 +75,29 @@ export default function TaskFlowApp() {
   const activeColumnTitle = useMemo(() => {
     if (!currentActiveTask) return "";
     const column = Object.values(data.columns).find((col) =>
-      col.taskIds.includes(currentActiveTask.id)
+      col.taskIds.includes(currentActiveTask.id),
     );
     return column?.title || "";
   }, [currentActiveTask, data.columns]);
 
   useEffect(() => {
-    if (id) {
-      fetchBoardData(id);
-      fetchLabels(id).catch(() => {});
-    }
+    const loadInitialData = async () => {
+      if (id) {
+        setIsLoading(true);
+        try {
+          await Promise.all([
+            fetchBoardData(id),
+            fetchLabels(id).catch(() => {}),
+          ]);
+        } catch (error) {
+          console.error("Error loading board data:", error);
+        } finally {
+          setTimeout(() => setIsLoading(false), 300);
+        }
+      }
+    };
+
+    loadInitialData();
   }, [id, fetchBoardData, fetchLabels]);
 
   useEffect(() => {
@@ -97,13 +111,13 @@ export default function TaskFlowApp() {
       setActiveCard(task);
       setIsModalOpen(true);
     },
-    [setActiveCard, setIsModalOpen]
+    [setActiveCard, setIsModalOpen],
   );
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 5 },
-    })
+    }),
   );
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -115,14 +129,14 @@ export default function TaskFlowApp() {
     const cardId = active.id as string;
 
     const sourceColId = Object.keys(data.columns).find((colId) =>
-      data.columns[colId].taskIds.includes(cardId)
+      data.columns[colId].taskIds.includes(cardId),
     );
 
     if (!sourceColId) return;
 
     const destColId =
       Object.keys(data.columns).find((colId) =>
-        data.columns[colId].taskIds.includes(over.id as string)
+        data.columns[colId].taskIds.includes(over.id as string),
       ) || (over.id as string);
 
     if (!data.columns[destColId]) return;
@@ -138,7 +152,6 @@ export default function TaskFlowApp() {
 
       const newTaskIds = arrayMove(sourceCol.taskIds, oldIndex, newIndex);
 
-      // Update local state
       updateColumns({
         ...data.columns,
         [sourceColId]: { ...sourceCol, taskIds: newTaskIds },
@@ -162,7 +175,6 @@ export default function TaskFlowApp() {
     const insertIndex = overIndex >= 0 ? overIndex : newDestIds.length;
     newDestIds.splice(insertIndex, 0, cardId);
 
-    // Update local state
     updateColumns({
       ...data.columns,
       [sourceColId]: { ...sourceCol, taskIds: newSourceIds },
@@ -180,14 +192,14 @@ export default function TaskFlowApp() {
     async (colId: string, taskId: string) => {
       await deleteTask(colId, taskId);
     },
-    [deleteTask]
+    [deleteTask],
   );
 
   const handleAddTaskToColumn = useCallback(
     async (colId: string, title: string) => {
       await addTaskToColumn(colId, title);
     },
-    [addTaskToColumn]
+    [addTaskToColumn],
   );
 
   const handleAddColumn = async () => {
@@ -200,21 +212,21 @@ export default function TaskFlowApp() {
       if (!id) return;
       await updateColumnTitle(id, colId, newTitle);
     },
-    [id, updateColumnTitle]
+    [id, updateColumnTitle],
   );
 
   const handleSaveTaskTitle = useCallback(
     async (taskId: string, newTitle: string) => {
       await updateTaskTitle(taskId, newTitle);
     },
-    [updateTaskTitle]
+    [updateTaskTitle],
   );
 
   const handleSaveTaskDescription = useCallback(
     async (taskId: string, desc: string) => {
       await updateTaskDescription(taskId, desc);
     },
-    [updateTaskDescription]
+    [updateTaskDescription],
   );
 
   const handleModalDeleteTask = useCallback(
@@ -225,28 +237,28 @@ export default function TaskFlowApp() {
       handleDeleteTask(colId, taskId);
       setIsModalOpen(false);
     },
-    [getColumnIdByTask, handleDeleteTask, setIsModalOpen]
+    [getColumnIdByTask, handleDeleteTask, setIsModalOpen],
   );
 
   const handleUpdateTaskLabels = useCallback(
     async (taskId: string, labelId: string) => {
       await updateTaskLabels(taskId, labelId);
     },
-    [updateTaskLabels]
+    [updateTaskLabels],
   );
 
   const handleSaveTaskDueDate = useCallback(
     async (taskId: string, dueDate: string | Date | null) => {
       await updateTaskDueDate(taskId, dueDate);
     },
-    [updateTaskDueDate]
+    [updateTaskDueDate],
   );
 
   const handleUpdateTaskMembers = useCallback(
     async (taskId: string, userId: string) => {
       await updateTaskMembers(taskId, userId);
     },
-    [updateTaskMembers]
+    [updateTaskMembers],
   );
 
   const activeTask = activeId ? data.tasks[activeId] : null;
@@ -254,9 +266,26 @@ export default function TaskFlowApp() {
 
   const isUrl = typeof background === "string" && background.startsWith("http");
 
+  if (isLoading) {
+    return (
+      <div
+        className="flex flex-col items-center justify-center h-screen text-white"
+        style={{
+          background: isUrl
+            ? `url(${background}) center/cover no-repeat`
+            : background || "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        }}
+      >
+        <div className="flex flex-col items-center gap-4 ">
+          <Loader size="lg" color="blue" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
-      className="flex flex-col h-screen text-white overflow-hidden"
+      className="flex flex-col h-screen text-white overflow-hidden animate-in fade-in duration-500"
       style={{
         background: isUrl
           ? `url(${background}) center/cover no-repeat`

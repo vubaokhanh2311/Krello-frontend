@@ -22,24 +22,23 @@ import { useUserStore } from "../../../../stores/userStore";
 import { logout } from "../../../../api/authService";
 import { Link } from "react-router-dom";
 import { useDisclosure, useClickOutside } from "@mantine/hooks";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { CreateBoardModal } from "../../../Board/CreateBoardModal";
 import { CreateBoard, searchBoards } from "../../../../api/boardService";
 import { notifications } from "@mantine/notifications";
 import { useDebounce } from "../../../../hooks/useDebounce";
 import { resolveAvatarUrl } from "../../../../utils/avatar";
+import { useFetch } from "../../../../hooks/useFetch";
 
 export default function Header() {
   const { user } = useUserStore();
 
   const [opened, { open, close }] = useDisclosure(false);
-  const [isLoading, setIsLoading] = useState(false);
 
   const [keyword, setKeyword] = useState("");
   const debouncedKeyword = useDebounce(keyword, 300);
   const [results, setResults] = useState<any[]>([]);
   const [openSearch, setOpenSearch] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
 
   const [mobileSearchActive, setMobileSearchActive] = useState(false);
 
@@ -47,28 +46,50 @@ export default function Header() {
   const searchContainerRef = useClickOutside(() => setOpenSearch(false));
   const avatarSrc = user ? resolveAvatarUrl(user.avatarUrl) : null;
 
-  const handleCreateBoard = async (values: any) => {
-    setIsLoading(true);
-    try {
-      await CreateBoard(values);
-      notifications.show({
-        title: "Thành công",
-        message: "Tạo bảng thành công",
-        color: "green",
-        autoClose: 1000,
-      });
-      await new Promise((r) => setTimeout(r, 1000));
-      close();
-    } catch (error: any) {
-      notifications.show({
-        title: "Thất bại",
-        message: error?.message || "Tạo bảng thất bại",
-        color: "red",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const createBoardOptions = useMemo(
+    () => ({
+      onSuccess: () => {
+        notifications.show({
+          title: "Thành công",
+          message: "Tạo bảng thành công",
+          color: "green",
+          autoClose: 1000,
+        });
+        setTimeout(() => close(), 1000);
+      },
+    }),
+    [close],
+  );
+
+  const { loading: isLoading, fetch: createBoardFetch } = useFetch(
+    CreateBoard,
+    createBoardOptions,
+  );
+
+  const searchBoardsOptions = useMemo(
+    () => ({
+      onSuccess: (res: unknown) => {
+        setResults((res as { data?: any[] })?.data ?? []);
+        setOpenSearch(true);
+      },
+      onError: () => {
+        setResults([]);
+      },
+    }),
+    [],
+  );
+
+  const { loading: isSearching, fetch: searchBoardsFetch } = useFetch(
+    searchBoards,
+    searchBoardsOptions,
+  );
+
+  const handleCreateBoard = useCallback(
+    async (values: any) => {
+      await createBoardFetch(values);
+    },
+    [createBoardFetch],
+  );
 
   useEffect(() => {
     if (!debouncedKeyword.trim()) {
@@ -76,19 +97,7 @@ export default function Header() {
       setOpenSearch(false);
       return;
     }
-    const fetchBoards = async () => {
-      try {
-        setIsSearching(true);
-        const res = await searchBoards(debouncedKeyword);
-        setResults((res as { data?: any[] })?.data ?? []);
-        setOpenSearch(true);
-      } catch {
-        setResults([]);
-      } finally {
-        setIsSearching(false);
-      }
-    };
-    fetchBoards();
+    searchBoardsFetch(debouncedKeyword);
   }, [debouncedKeyword]);
 
   const closeMobileSearch = () => {

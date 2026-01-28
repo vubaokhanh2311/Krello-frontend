@@ -48,8 +48,7 @@ export default function AuthInitializer({ children }: Props) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-          <p className="mt-2 text-sm text-gray-600">Đang khởi tạo...</p>
+          <p className="text-sm text-gray-600">Đang khởi tạo...</p>
         </div>
       </div>
     );

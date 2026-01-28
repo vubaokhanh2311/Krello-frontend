@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUserStore } from "../../../stores/userStore";
 import {
@@ -23,19 +23,16 @@ import restClient from "../../../api/RestClient";
 import { redirectAfterLogin } from "../../../utils/redirectHelper";
 import { Link } from "react-router-dom";
 import { useGoogleLogin } from "../../../hooks/useGoogleLogin";
+import { useFetch } from "../../../hooks/useFetch";
 
 export default function LoginForm() {
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { setUser } = useUserStore.getState();
 
-  const handleGoogleLogin = useCallback(
-    async (credential: string) => {
-      try {
-        setLoading(true);
-
-        const res = await loginWithGoogle(credential);
-
+  const { loading: loadingGoogle, fetch: loginGoogleFetch } = useFetch(
+    loginWithGoogle,
+    {
+      onSuccess: async (res) => {
         if (!res || !res.accessToken || !res.refreshToken) {
           throw new Error("Không nhận được token từ server");
         }
@@ -56,22 +53,40 @@ export default function LoginForm() {
         setTimeout(() => {
           redirectAfterLogin(navigate);
         }, 1000);
-      } catch (err: any) {
-        console.error("Google login error:", err);
+      },
+    }
+  );
 
-        notifications.show({
-          title: "Đăng nhập thất bại",
-          message:
-            err?.response?.data?.message ||
-            err?.message ||
-            "Đăng nhập Google thất bại",
-          color: "red",
-        });
-
-        setLoading(false);
+  const { loading: loadingLogin, fetch: loginFetch } = useFetch(login, {
+    onSuccess: async (res, values) => {
+      if (!res || !res.accessToken || !res.refreshToken) {
+        throw new Error("Không nhận được token từ server");
       }
+
+      restClient.setRememberMe(values.remember);
+      restClient.setTokens(res.accessToken, res.refreshToken);
+
+      const userProfile = await getUserProfile();
+      setUser(userProfile, res.accessToken, res.refreshToken);
+
+      notifications.show({
+        title: "Thành công",
+        message: "Đăng nhập thành công!",
+        color: "green",
+        autoClose: 1500,
+      });
+
+      setTimeout(() => {
+        redirectAfterLogin(navigate);
+      }, 1000);
     },
-    [navigate],
+  });
+
+  const handleGoogleLogin = useCallback(
+    async (credential: string) => {
+      await loginGoogleFetch(credential);
+    },
+    [loginGoogleFetch, navigate],
   );
 
   const googleButtonRef = useGoogleLogin({
@@ -88,45 +103,10 @@ export default function LoginForm() {
   });
 
   const handleSubmit = async (values: LoginRequest) => {
-    try {
-      setLoading(true);
-
-      const res = await login(values);
-
-      if (!res || !res.accessToken || !res.refreshToken) {
-        throw new Error("Không nhận được token từ server");
-      }
-
-      restClient.setRememberMe(values.remember);
-
-      restClient.setTokens(res.accessToken, res.refreshToken);
-
-      const userProfile = await getUserProfile();
-      setUser(userProfile, res.accessToken, res.refreshToken);
-
-      notifications.show({
-        title: "Thành công",
-        message: "Đăng nhập thành công!",
-        color: "green",
-        autoClose: 1500,
-      });
-
-      setTimeout(() => {
-        redirectAfterLogin(navigate);
-      }, 1000);
-    } catch (err: any) {
-      console.error("Login error:", err);
-
-      notifications.show({
-        title: "Đăng nhập thất bại",
-        message:
-          err?.response?.data?.message || err?.message || "Đăng nhập thất bại",
-        color: "red",
-      });
-
-      setLoading(false);
-    }
+    await loginFetch(values);
   };
+
+  const loading = loadingLogin || loadingGoogle;
 
   return (
     <form onSubmit={form.onSubmit(handleSubmit)} className="space-y-6">
@@ -163,7 +143,13 @@ export default function LoginForm() {
         </Link>
       </Group>
 
-      <Button fullWidth type="submit" loading={loading} size="md">
+      <Button
+        fullWidth
+        type="submit"
+        loading={loading}
+        size="md"
+        disabled={loading}
+      >
         Đăng nhập
       </Button>
 

@@ -27,7 +27,7 @@ interface LabelStore {
   updateLabelAction: (
     boardId: string,
     labelId: string,
-    dto: UpdateLabelDto
+    dto: UpdateLabelDto,
   ) => Promise<Label>;
   deleteLabelAction: (boardId: string, labelId: string) => Promise<void>;
 }
@@ -40,7 +40,7 @@ export const useLabelStore = create<LabelStore>((set, get) => ({
   fetchLabels: async (boardId) => {
     set({ isLoading: true });
     try {
-      const res = await getLabel(boardId) as { data: Label[] };
+      const res = (await getLabel(boardId)) as { data: Label[] };
       set({ labels: res.data });
     } finally {
       set({ isLoading: false });
@@ -48,7 +48,10 @@ export const useLabelStore = create<LabelStore>((set, get) => ({
   },
 
   createLabelAction: async (boardId, dto) => {
-    const res = await createLabel(boardId, { name: dto.name, color: dto.color || "#e5e7eb" });
+    const res = await createLabel(boardId, {
+      name: dto.name,
+      color: dto.color || "#e5e7eb",
+    });
     const newLabel = (res as { data: Label }).data;
 
     set({
@@ -59,7 +62,10 @@ export const useLabelStore = create<LabelStore>((set, get) => ({
   },
 
   updateLabelAction: async (boardId, labelId, dto) => {
-    const res = await updateLabel(boardId, labelId, { name: dto.name, color: dto.color || "#e5e7eb" });
+    const res = await updateLabel(boardId, labelId, {
+      name: dto.name,
+      color: dto.color || "#e5e7eb",
+    });
     const updated = (res as { data: Label }).data;
 
     set({

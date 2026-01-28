@@ -7,6 +7,7 @@ import type {
   InternalAxiosRequestConfig,
 } from "axios";
 import { toast } from "react-toastify";
+import { configureNProgress } from "../config/theme";
 
 const API_BASE_URL = `${import.meta.env.VITE_URL_API}/api`;
 
@@ -28,6 +29,8 @@ class RestClient {
     resolve: (value?: any) => void;
     reject: (reason?: any) => void;
   }> = [];
+  private activeRequests = 0;
+  private nprogress = configureNProgress();
 
   constructor() {
     this.client = axios.create({
@@ -111,14 +114,36 @@ class RestClient {
         if (token && config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
         }
+
+        this.activeRequests++;
+        if (this.activeRequests === 1) {
+          this.nprogress.start();
+        }
+
         return config;
       },
-      (error) => Promise.reject(error),
+      (error) => {
+        this.activeRequests = Math.max(0, this.activeRequests - 1);
+        if (this.activeRequests === 0) {
+          this.nprogress.done();
+        }
+        return Promise.reject(error);
+      },
     );
 
     this.client.interceptors.response.use(
-      (response: AxiosResponse) => response,
+      (response: AxiosResponse) => {
+        this.activeRequests = Math.max(0, this.activeRequests - 1);
+        if (this.activeRequests === 0) {
+          this.nprogress.done();
+        }
+        return response;
+      },
       async (error: AxiosError<ApiError>) => {
+        this.activeRequests = Math.max(0, this.activeRequests - 1);
+        if (this.activeRequests === 0) {
+          this.nprogress.done();
+        }
         const originalRequest = error.config as InternalAxiosRequestConfig & {
           _retry?: boolean;
         };

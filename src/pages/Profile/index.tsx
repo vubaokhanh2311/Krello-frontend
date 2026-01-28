@@ -26,6 +26,8 @@ import ActivityList from "../../components/Profile/ActivityList";
 import { updateProfile, updateAvatar } from "../../api/profileService";
 import { useUserStore } from "../../stores/userStore";
 import { logout } from "../../api/authService";
+import { useFetch } from "../../hooks/useFetch";
+
 export default function Profile() {
   const { user, setUser, accessToken, refreshToken } = useUserStore();
   const [isEditing, setIsEditing] = useState(false);
@@ -46,52 +48,59 @@ export default function Profile() {
     }
   }, [user]);
 
-  const handleSave = async (values: typeof form.values) => {
-    try {
-      await updateProfile(values);
+  const { loading: updatingProfile, fetch: updateProfileFetch } = useFetch(
+    updateProfile,
+    {
+      onSuccess: (_, values) => {
+        if (user) {
+          setUser(
+            {
+              ...user,
+              ...values,
+            },
+            accessToken || "",
+            refreshToken || ""
+          );
+        }
 
-      if (user) {
-        setUser({
-          ...user,
-          ...values,
-        }, accessToken || "", refreshToken || "");
-      }
+        notifications.show({
+          title: "Thành công",
+          message: "Cập nhật thông tin thành công!",
+          color: "green",
+        });
 
-      notifications.show({
-        title: "Thành công",
-        message: "Cập nhật thông tin thành công!",
-        color: "green",
-      });
-
-      setIsEditing(false);
-    } catch (error) {
-      notifications.show({
-        title: "Lỗi",
-        message: "Không thể cập nhật thông tin!",
-        color: "red",
-      });
+        setIsEditing(false);
+      },
     }
+  );
+
+  const { loading: updatingAvatar, fetch: updateAvatarFetch } = useFetch(
+    updateAvatar,
+    {
+      onSuccess: (data) => {
+        if (user) {
+          setUser(
+            { ...user, avatarUrl: data.avatarUrl },
+            accessToken || "",
+            refreshToken || ""
+          );
+        }
+
+        notifications.show({
+          title: "Thành công",
+          message: "Cập nhật ảnh đại diện thành công!",
+          color: "green",
+        });
+      },
+    }
+  );
+
+  const handleSave = async (values: typeof form.values) => {
+    await updateProfileFetch(values);
   };
 
   const handleFileChange = async (file: File) => {
-    try {
-      const data = await updateAvatar(file);
-      if (user) {
-        setUser({ ...user, avatarUrl: data.avatarUrl }, accessToken || "", refreshToken || "");
-      }
-
-      notifications.show({
-        title: "Thành công",
-        message: "Cập nhật ảnh đại diện thành công!",
-        color: "green",
-      });
-    } catch (err) {
-      notifications.show({
-        title: "Lỗi",
-        message: "Không thể cập nhật ảnh đại diện",
-        color: "red",
-      });
-    }
+    await updateAvatarFetch(file);
   };
   if (!user) return null;
   const avatarSrc = resolveAvatarUrl(user.avatarUrl);
@@ -121,6 +130,7 @@ export default function Profile() {
                     type="file"
                     accept="image/*"
                     className="hidden"
+                    disabled={updatingAvatar}
                     onChange={(e) => {
                       if (!e.target.files?.[0]) return;
                       handleFileChange(e.target.files[0]);
@@ -225,6 +235,8 @@ export default function Profile() {
                         color="indigo"
                         size="sm"
                         type="submit"
+                        loading={updatingProfile}
+                        disabled={updatingProfile}
                         leftSection={<IconDeviceFloppy size={18} />}
                       >
                         Lưu

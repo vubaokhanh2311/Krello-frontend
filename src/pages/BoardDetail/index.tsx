@@ -14,7 +14,7 @@ import type {
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { IconPlus, IconX, IconShare3, IconSettings } from "@tabler/icons-react";
-import { Avatar, Button, Loader } from "@mantine/core";
+import { Avatar, Button } from "@mantine/core";
 import type { Task } from "../../types/BoardDetail";
 import { SortableTask } from "../../components/Board/SortableTask";
 import { Column } from "../../components/Board/Colum";
@@ -275,11 +275,7 @@ export default function TaskFlowApp() {
             ? `url(${background}) center/cover no-repeat`
             : background || "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
         }}
-      >
-        <div className="flex flex-col items-center gap-4 ">
-          <Loader size="lg" color="blue" />
-        </div>
-      </div>
+      ></div>
     );
   }
 

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   Button,
   TextInput,
@@ -16,9 +15,9 @@ import { useGoogleLogin } from "../../../hooks/useGoogleLogin";
 import { loginWithGoogle, getUserProfile } from "../../../api/authService";
 import RestClient from "../../../api/RestClient";
 import { useUserStore } from "../../../stores/userStore";
+import { useFetch } from "../../../hooks/useFetch";
 
 export default function RegisterForm() {
-  const [loading, setLoading] = useState(false);
   const { setUser } = useUserStore.getState();
   const form = useForm<RegistrerRequest>({
     initialValues: {
@@ -29,47 +28,31 @@ export default function RegisterForm() {
     validate: validateRegister,
   });
 
-  const handleGoogleRegister = async (credential: string) => {
-    try {
-      setLoading(true);
+  const { loading: loadingGoogle, fetch: loginGoogleFetch } = useFetch(
+    loginWithGoogle,
+    {
+      onSuccess: async (res) => {
+        if (!res) throw new Error("Đăng nhập Google thất bại");
 
-      const res = await loginWithGoogle(credential);
-      if (!res) throw new Error("Đăng nhập Google thất bại");
+        RestClient.setToken(res.accessToken);
+        const userProfile = await getUserProfile();
+        setUser(userProfile, res.accessToken, res.refreshToken);
+        notifications.show({
+          title: "Thành công",
+          message: "Đăng nhập Google thành công",
+          color: "green",
+          autoClose: 1000,
+        });
 
-      RestClient.setToken(res.accessToken);
-      const userProfile = await getUserProfile();
-      setUser(userProfile, res.accessToken, res.refreshToken);
-      notifications.show({
-        title: "Thành công",
-        message: "Đăng nhập Google thành công",
-        color: "green",
-        autoClose: 1000,
-      });
-
-      setTimeout(() => {
-        window.location.href = "/";
-      }, 1000);
-    } catch (err: any) {
-      notifications.show({
-        title: "Thất bại",
-        message: err?.message || "Đăng nhập Google thất bại",
-        color: "red",
-      });
-      setLoading(false);
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 1000);
+      },
     }
-  };
+  );
 
-  const googleButtonRef = useGoogleLogin({
-    onSuccess: handleGoogleRegister,
-  });
-
-  const handleSubmit = async (values: RegistrerRequest) => {
-    try {
-      setLoading(true);
-
-      const res = await register(values);
-      if (!res) throw new Error("Đăng ký thất bại");
-
+  const { loading: loadingRegister, fetch: registerFetch } = useFetch(register, {
+    onSuccess: () => {
       notifications.show({
         title: "Thành công",
         message: "Đăng ký thành công",
@@ -80,15 +63,22 @@ export default function RegisterForm() {
       setTimeout(() => {
         window.location.href = "/login";
       }, 1000);
-    } catch (error: any) {
-      notifications.show({
-        title: "Thất bại",
-        message: error?.message || "Đăng ký thất bại",
-        color: "red",
-      });
-      setLoading(false);
-    }
+    },
+  });
+
+  const handleGoogleRegister = async (credential: string) => {
+    await loginGoogleFetch(credential);
   };
+
+  const googleButtonRef = useGoogleLogin({
+    onSuccess: handleGoogleRegister,
+  });
+
+  const handleSubmit = async (values: RegistrerRequest) => {
+    await registerFetch(values);
+  };
+
+  const loading = loadingRegister || loadingGoogle;
 
   return (
     <form onSubmit={form.onSubmit(handleSubmit)} className="space-y-6">
@@ -118,7 +108,7 @@ export default function RegisterForm() {
         />
       </Stack>
 
-      <Button fullWidth type="submit" loading={loading}>
+      <Button fullWidth type="submit" loading={loading} disabled={loading}>
         Đăng ký
       </Button>
 

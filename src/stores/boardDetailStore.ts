@@ -59,7 +59,7 @@ interface BoardDetailStore {
   updateColumnTitle: (
     boardId: string,
     colId: string,
-    newTitle: string
+    newTitle: string,
   ) => Promise<void>;
 
   addTaskToColumn: (colId: string, title: string) => Promise<void>;
@@ -70,13 +70,13 @@ interface BoardDetailStore {
   updateTaskMembers: (taskId: string, userId: string) => Promise<void>;
   updateTaskDueDate: (
     taskId: string,
-    dueDate: string | Date | null
+    dueDate: string | Date | null,
   ) => Promise<void>;
   moveTask: (
     cardId: string,
     sourceColId: string,
     destColId: string,
-    newTaskIds: string[]
+    newTaskIds: string[],
   ) => Promise<void>;
 
   getColumnIdByTask: (taskId: string) => string | undefined;
@@ -131,7 +131,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
 
       const resList = (await getList(boardId)) as ApiListResponse;
       const sortedColumns = resList.data.sort(
-        (a, b) => a.position - b.position
+        (a, b) => a.position - b.position,
       );
 
       const apiColumns: Record<string, ColumnData> = {};
@@ -149,10 +149,10 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
       const tasks: Record<string, Task> = {};
 
       const cardPromises = sortedColumns.map((col: ApiColumn) =>
-        getCard(col.id)
+        getCard(col.id),
       );
       const cardsResults = (await Promise.all(
-        cardPromises
+        cardPromises,
       )) as ApiCardResponse[];
 
       cardsResults.forEach((resCard, index) => {
@@ -160,10 +160,10 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
 
         resCard.data.forEach((card: ApiCard) => {
           const mappedTask = mapApiCardToTask(card);
-          // Convert to BoardDetail Task type (labels will be fetched separately)
+
           const task: Task = {
             ...mappedTask,
-            labels: [], // Labels are managed separately via labelIds
+            labels: [],
           };
           tasks[task.id] = task;
           apiColumns[col.id].taskIds.push(task.id);
@@ -268,7 +268,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
       const mappedTask = mapApiCardToTask(resCard as ApiCard);
       const newTask: Task = {
         ...mappedTask,
-        labels: [], // Labels are managed separately via labelIds
+        labels: [],
       };
       const taskId = newTask.id;
 
@@ -628,7 +628,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
   getColumnIdByTask: (taskId) => {
     const state = get();
     return Object.keys(state.data.columns).find((key) =>
-      state.data.columns[key].taskIds.includes(taskId)
+      state.data.columns[key].taskIds.includes(taskId),
     );
   },
 

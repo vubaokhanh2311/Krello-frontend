@@ -28,6 +28,7 @@ import { CreateBoard, searchBoards } from "../../../../api/boardService";
 import { notifications } from "@mantine/notifications";
 import { useDebounce } from "../../../../hooks/useDebounce";
 import { resolveAvatarUrl } from "../../../../utils/avatar";
+import { useBoardStore } from "../../../../stores/boardStore";
 
 export default function Header() {
   const { user } = useUserStore();
@@ -46,11 +47,12 @@ export default function Header() {
   const safeResults = Array.isArray(results) ? results : [];
   const searchContainerRef = useClickOutside(() => setOpenSearch(false));
   const avatarSrc = user ? resolveAvatarUrl(user.avatarUrl) : null;
-
+  const { fetchBoards } = useBoardStore();
   const handleCreateBoard = async (values: any) => {
     setIsLoading(true);
     try {
       await CreateBoard(values);
+      await fetchBoards(1);
       notifications.show({
         title: "Thành công",
         message: "Tạo bảng thành công",

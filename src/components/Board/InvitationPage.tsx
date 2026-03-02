@@ -16,14 +16,16 @@ const InvitationPage = () => {
   const tokenFromStorage = localStorage.getItem("inviteToken");
   const token = tokenFromUrl || tokenFromStorage;
 
-  const accessToken = localStorage.getItem("accessToken");
+  const accessToken =
+    localStorage.getItem("accessToken") ||
+    sessionStorage.getItem("accessToken");
 
   useEffect(() => {
     if (!accessToken && token) {
       localStorage.setItem("inviteToken", token);
       localStorage.setItem(
         "redirectAfterLogin",
-        location.pathname + location.search
+        location.pathname + location.search,
       );
       navigate("/login");
     }

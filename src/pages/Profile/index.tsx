@@ -11,29 +11,66 @@ import {
   IconLayoutGrid,
   IconUsers,
   IconFileText,
-  IconCircleCheck,
   IconChevronRight,
   IconLock,
   IconLogout,
 } from "@tabler/icons-react";
-import { TextInput, Button, Group, Avatar } from "@mantine/core";
+import {
+  TextInput,
+  Button,
+  Group,
+  Avatar,
+  Modal,
+  PasswordInput,
+} from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import { resolveAvatarUrl } from "../../utils/avatar";
 import BentoBox from "../../components/Profile/BentoBox";
 import StatItem from "../../components/Profile/StatItem";
 import ActivityList from "../../components/Profile/ActivityList";
-import { updateProfile, updateAvatar } from "../../api/profileService";
+import {
+  updateProfile,
+  updateAvatar,
+  getMyActivities,
+  getMyStats,
+} from "../../api/profileService";
 import { useUserStore } from "../../stores/userStore";
 import { logout } from "../../api/authService";
+import { changePassword } from "../../api/authService";
+
+import type { ActivityUI } from "../../types/ActivityUI";
 export default function Profile() {
   const { user, setUser, accessToken, refreshToken } = useUserStore();
   const [isEditing, setIsEditing] = useState(false);
+  const [activities, setActivities] = useState<ActivityUI[]>([]);
+  const [loadingActivities, setLoadingActivities] = useState(false);
+  const [openChangePass, setOpenChangePass] = useState(false);
+  const [changingPass, setChangingPass] = useState(false);
+
+  const [stats, setStats] = useState({
+    ownedBoards: 0,
+    joinedBoards: 0,
+    tasksCreated: 0,
+  });
+  const [loadingStats, setLoadingStats] = useState(false);
 
   const form = useForm({
     initialValues: {
       name: user?.name ?? "",
       email: user?.email ?? "",
+    },
+  });
+
+  const changePassForm = useForm({
+    initialValues: {
+      oldPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
+    validate: {
+      confirmPassword: (value, values) =>
+        value !== values.newPassword ? "Mật khẩu xác nhận không khớp" : null,
     },
   });
 
@@ -46,15 +83,78 @@ export default function Profile() {
     }
   }, [user]);
 
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchActivities = async () => {
+      try {
+        setLoadingActivities(true);
+
+        const res = await getMyActivities({
+          page: 1,
+          pageSize: 20,
+        });
+
+        if (!mounted) return;
+
+        setActivities(res?.data ?? []);
+      } catch (err) {
+        console.error("fetch activities failed", err);
+      } finally {
+        if (mounted) setLoadingActivities(false);
+      }
+    };
+
+    fetchActivities();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchStats = async () => {
+      try {
+        setLoadingStats(true);
+
+        const res = await getMyStats();
+
+        if (!mounted) return;
+
+        setStats({
+          ownedBoards: res.ownedBoards ?? 0,
+          joinedBoards: res.joinedBoards ?? 0,
+          tasksCreated: res.tasksCreated ?? 0,
+        });
+      } catch (err) {
+        console.error("fetch stats failed", err);
+      } finally {
+        if (mounted) setLoadingStats(false);
+      }
+    };
+
+    fetchStats();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const handleSave = async (values: typeof form.values) => {
     try {
       await updateProfile(values);
 
       if (user) {
-        setUser({
-          ...user,
-          ...values,
-        }, accessToken || "", refreshToken || "");
+        setUser(
+          {
+            ...user,
+            ...values,
+          },
+          accessToken || "",
+          refreshToken || "",
+        );
       }
 
       notifications.show({
@@ -77,7 +177,11 @@ export default function Profile() {
     try {
       const data = await updateAvatar(file);
       if (user) {
-        setUser({ ...user, avatarUrl: data.avatarUrl }, accessToken || "", refreshToken || "");
+        setUser(
+          { ...user, avatarUrl: data.avatarUrl },
+          accessToken || "",
+          refreshToken || "",
+        );
       }
 
       notifications.show({
@@ -91,6 +195,33 @@ export default function Profile() {
         message: "Không thể cập nhật ảnh đại diện",
         color: "red",
       });
+    }
+  };
+  const handleChangePassword = async (values: typeof changePassForm.values) => {
+    try {
+      setChangingPass(true);
+
+      await changePassword({
+        oldPassword: values.oldPassword,
+        newPassword: values.newPassword,
+      });
+
+      notifications.show({
+        title: "Thành công",
+        message: "Đổi mật khẩu thành công",
+        color: "green",
+      });
+
+      changePassForm.reset();
+      setOpenChangePass(false);
+    } catch {
+      notifications.show({
+        title: "Lỗi",
+        message: "Mật khẩu cũ không đúng",
+        color: "red",
+      });
+    } finally {
+      setChangingPass(false);
     }
   };
   if (!user) return null;
@@ -152,7 +283,10 @@ export default function Profile() {
                 mật
               </h3>
               <div className="space-y-3">
-                <button className="w-full flex items-center justify-between p-3 bg-gray-100 rounded-lg hover:bg-gray-200 transition">
+                <button
+                  onClick={() => setOpenChangePass(true)}
+                  className="w-full flex items-center justify-between p-3 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                >
                   <span className="font-medium text-gray-700 text-lg">
                     Đổi mật khẩu
                   </span>
@@ -177,14 +311,23 @@ export default function Profile() {
           </div>
 
           <div className="lg:col-span-2 space-y-6">
-            <BentoBox className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-4 bg-indigo-50/10">
-              <StatItem icon={IconLayoutGrid} value={4} label="Bảng sở hữu" />
-              <StatItem icon={IconUsers} value={15} label="Bảng tham gia" />
-              <StatItem icon={IconFileText} value={342} label="Tasks đã tạo" />
+            <BentoBox className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-4 bg-indigo-50/10">
               <StatItem
-                icon={IconCircleCheck}
-                value={"85%"}
-                label="Tỉ lệ hoàn thành"
+                icon={IconLayoutGrid}
+                value={loadingStats ? "…" : stats.ownedBoards}
+                label="Bảng sở hữu"
+              />
+
+              <StatItem
+                icon={IconUsers}
+                value={loadingStats ? "…" : stats.joinedBoards}
+                label="Bảng tham gia"
+              />
+
+              <StatItem
+                icon={IconFileText}
+                value={loadingStats ? "…" : stats.tasksCreated}
+                label="Tasks đã tạo"
               />
             </BentoBox>
 
@@ -255,11 +398,51 @@ export default function Profile() {
                 hoạt động
               </h3>
 
-              <ActivityList activities={[]} />
+              <ActivityList
+                activities={activities}
+                loading={loadingActivities}
+              />
             </BentoBox>
           </div>
         </div>
       </div>
+      <Modal
+        opened={openChangePass}
+        onClose={() => setOpenChangePass(false)}
+        title="Đổi mật khẩu"
+        centered
+      >
+        <form onSubmit={changePassForm.onSubmit(handleChangePassword)}>
+          <div className="space-y-4">
+            <PasswordInput
+              label="Mật khẩu cũ"
+              required
+              {...changePassForm.getInputProps("oldPassword")}
+            />
+
+            <PasswordInput
+              label="Mật khẩu mới"
+              required
+              {...changePassForm.getInputProps("newPassword")}
+            />
+
+            <PasswordInput
+              label="Xác nhận mật khẩu"
+              required
+              {...changePassForm.getInputProps("confirmPassword")}
+            />
+
+            <Button
+              type="submit"
+              fullWidth
+              loading={changingPass}
+              color="indigo"
+            >
+              Cập nhật mật khẩu
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

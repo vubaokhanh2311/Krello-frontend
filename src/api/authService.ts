@@ -87,3 +87,12 @@ export async function resetPassword(
   );
   return res;
 }
+
+export interface ChangePasswordPayload {
+  oldPassword: string;
+  newPassword: string;
+}
+
+export async function changePassword(data: ChangePasswordPayload) {
+  return RestClient.put("/auth/change-password", data);
+}

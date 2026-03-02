@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useMemo } from "react";
+import { useEffect, useCallback, useMemo, useState } from "react";
 import {
   DndContext,
   closestCenter,
@@ -30,7 +30,7 @@ import { useBoardSocket } from "../../hooks/useBoardSocket";
 export default function TaskFlowApp() {
   const { id } = useParams<{ id: string }>();
   const [opened, { open, close }] = useDisclosure(false);
-
+  const [loadingBoard, setLoadingBoard] = useState(true);
   const {
     data,
     boardDetail,
@@ -74,16 +74,20 @@ export default function TaskFlowApp() {
   const activeColumnTitle = useMemo(() => {
     if (!currentActiveTask) return "";
     const column = Object.values(data.columns).find((col) =>
-      col.taskIds.includes(currentActiveTask.id)
+      col.taskIds.includes(currentActiveTask.id),
     );
     return column?.title || "";
   }, [currentActiveTask, data.columns]);
-
   useEffect(() => {
-    if (id) {
-      fetchBoardData(id);
-      fetchLabels(id).catch(() => {});
-    }
+    if (!id) return;
+
+    setLoadingBoard(true); // bật loading trước khi fetch
+
+    Promise.all([fetchBoardData(id), fetchLabels(id).catch(() => {})]).finally(
+      () => {
+        setLoadingBoard(false); // tắt loading sau khi tất cả xong
+      },
+    );
   }, [id, fetchBoardData, fetchLabels]);
 
   useEffect(() => {
@@ -97,13 +101,13 @@ export default function TaskFlowApp() {
       setActiveCard(task);
       setIsModalOpen(true);
     },
-    [setActiveCard, setIsModalOpen]
+    [setActiveCard, setIsModalOpen],
   );
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 5 },
-    })
+    }),
   );
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -115,14 +119,14 @@ export default function TaskFlowApp() {
     const cardId = active.id as string;
 
     const sourceColId = Object.keys(data.columns).find((colId) =>
-      data.columns[colId].taskIds.includes(cardId)
+      data.columns[colId].taskIds.includes(cardId),
     );
 
     if (!sourceColId) return;
 
     const destColId =
       Object.keys(data.columns).find((colId) =>
-        data.columns[colId].taskIds.includes(over.id as string)
+        data.columns[colId].taskIds.includes(over.id as string),
       ) || (over.id as string);
 
     if (!data.columns[destColId]) return;
@@ -180,14 +184,14 @@ export default function TaskFlowApp() {
     async (colId: string, taskId: string) => {
       await deleteTask(colId, taskId);
     },
-    [deleteTask]
+    [deleteTask],
   );
 
   const handleAddTaskToColumn = useCallback(
     async (colId: string, title: string) => {
       await addTaskToColumn(colId, title);
     },
-    [addTaskToColumn]
+    [addTaskToColumn],
   );
 
   const handleAddColumn = async () => {
@@ -200,21 +204,21 @@ export default function TaskFlowApp() {
       if (!id) return;
       await updateColumnTitle(id, colId, newTitle);
     },
-    [id, updateColumnTitle]
+    [id, updateColumnTitle],
   );
 
   const handleSaveTaskTitle = useCallback(
     async (taskId: string, newTitle: string) => {
       await updateTaskTitle(taskId, newTitle);
     },
-    [updateTaskTitle]
+    [updateTaskTitle],
   );
 
   const handleSaveTaskDescription = useCallback(
     async (taskId: string, desc: string) => {
       await updateTaskDescription(taskId, desc);
     },
-    [updateTaskDescription]
+    [updateTaskDescription],
   );
 
   const handleModalDeleteTask = useCallback(
@@ -225,35 +229,41 @@ export default function TaskFlowApp() {
       handleDeleteTask(colId, taskId);
       setIsModalOpen(false);
     },
-    [getColumnIdByTask, handleDeleteTask, setIsModalOpen]
+    [getColumnIdByTask, handleDeleteTask, setIsModalOpen],
   );
 
   const handleUpdateTaskLabels = useCallback(
     async (taskId: string, labelId: string) => {
       await updateTaskLabels(taskId, labelId);
     },
-    [updateTaskLabels]
+    [updateTaskLabels],
   );
 
   const handleSaveTaskDueDate = useCallback(
     async (taskId: string, dueDate: string | Date | null) => {
       await updateTaskDueDate(taskId, dueDate);
     },
-    [updateTaskDueDate]
+    [updateTaskDueDate],
   );
 
   const handleUpdateTaskMembers = useCallback(
     async (taskId: string, userId: string) => {
       await updateTaskMembers(taskId, userId);
     },
-    [updateTaskMembers]
+    [updateTaskMembers],
   );
 
   const activeTask = activeId ? data.tasks[activeId] : null;
   const background = boardDetail?.background || "";
 
   const isUrl = typeof background === "string" && background.startsWith("http");
-
+  if (loadingBoard) {
+    return (
+      <div className="flex items-center justify-center h-screen text-white text-xl">
+        Đang tải...
+      </div>
+    );
+  }
   return (
     <div
       className="flex flex-col h-screen text-white overflow-hidden"

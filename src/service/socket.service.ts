@@ -5,22 +5,28 @@ class SocketService {
   private joinedBoards = new Set<string>();
   private isConnecting = false;
 
+  private getToken() {
+    const remember = localStorage.getItem("rememberMe") === "true";
+    const storage = remember ? localStorage : sessionStorage;
+    return storage.getItem("accessToken");
+  }
+
   connect() {
-    if (this.socket?.connected || this.isConnecting) {
-      return;
-    }
+    if (this.socket?.connected || this.isConnecting) return;
 
     this.isConnecting = true;
-    const token = localStorage.getItem("accessToken");
 
     this.socket = io(import.meta.env.VITE_SOCKET_URL, {
-      auth: { token },
       transports: ["websocket"],
       reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
       reconnectionAttempts: Infinity,
-      autoConnect: true,
+      reconnectionDelay: 800,
+      reconnectionDelayMax: 4000,
+
+      auth: (cb) => {
+        const token = this.getToken();
+        cb({ token });
+      },
     });
 
     this.setupEventListeners();
@@ -32,15 +38,14 @@ class SocketService {
     this.socket.removeAllListeners();
 
     this.socket.on("connect", () => {
-      setTimeout(() => {
-        this.isConnecting = false;
-        this.joinedBoards.clear();
+      this.isConnecting = false;
 
-        const boardId = localStorage.getItem("currentBoardId");
-        if (boardId) {
-          this.emitJoin(boardId);
-        }
-      }, 50);
+      this.joinedBoards.clear();
+
+      const lastBoard = localStorage.getItem("currentBoardId");
+      if (lastBoard) {
+        this.emitJoin(lastBoard);
+      }
     });
 
     this.socket.on("disconnect", () => {
@@ -64,21 +69,17 @@ class SocketService {
       this.socket.disconnect();
     } catch (error) {
       console.error("Error disconnecting socket:", error);
-    } finally {
-      this.joinedBoards.clear();
-      this.socket = null;
-      this.isConnecting = false;
     }
+
+    this.joinedBoards.clear();
+    this.socket = null;
+    this.isConnecting = false;
   }
 
   joinBoard(boardId: string) {
     if (!this.socket) return;
 
     localStorage.setItem("currentBoardId", boardId);
-
-    if (this.joinedBoards.has(boardId)) {
-      return;
-    }
 
     if (!this.socket.connected) {
       const onConnect = () => {
@@ -100,18 +101,19 @@ class SocketService {
   private emitJoin(boardId: string) {
     if (!this.socket?.connected) return;
 
-    if (this.joinedBoards.has(boardId)) {
-      return;
-    }
+    if (this.joinedBoards.has(boardId)) return;
 
     this.socket.emit(
       "board:join",
       { boardId },
-      (response?: { success: boolean; error?: string }) => {
-        if (response?.success !== false) {
-          this.joinedBoards.add(boardId);
+      (res?: { success: boolean; error?: string }) => {
+        if (res?.success === false) {
+          console.error("Join board failed:", res.error);
+          return;
         }
-      }
+
+        this.joinedBoards.add(boardId);
+      },
     );
   }
 
@@ -121,50 +123,43 @@ class SocketService {
     this.socket.emit(
       "board:leave",
       { boardId },
-      (response?: { success: boolean }) => {
-        if (response?.success !== false) {
+      (res?: { success: boolean }) => {
+        if (res?.success !== false) {
           this.joinedBoards.delete(boardId);
           localStorage.removeItem("currentBoardId");
         }
-      }
+      },
     );
   }
 
-  on<T = unknown>(event: string, handler: (payload: T) => void) {
-    if (!this.socket) return;
-    this.socket.on(event, handler);
+  on<T = unknown>(event: string, handler: (data: T) => void) {
+    this.socket?.on(event, handler);
   }
 
   off(event: string, handler?: (...args: any[]) => void) {
     if (!this.socket) return;
 
-    if (handler) {
-      this.socket.off(event, handler);
-    } else {
-      this.socket.removeAllListeners(event);
-    }
+    if (handler) this.socket.off(event, handler);
+    else this.socket.removeAllListeners(event);
   }
 
-  isConnected(): boolean {
+  isConnected() {
     return this.socket?.connected ?? false;
   }
 
-  getSocketId(): string | undefined {
+  getSocketId() {
     return this.socket?.id;
   }
 
   emit<T = unknown>(
     event: string,
     data: any,
-    callback?: (response: T) => void
+    callback?: (response: T) => void,
   ) {
     if (!this.socket?.connected) return;
 
-    if (callback) {
-      this.socket.emit(event, data, callback);
-    } else {
-      this.socket.emit(event, data);
-    }
+    if (callback) this.socket.emit(event, data, callback);
+    else this.socket.emit(event, data);
   }
 }
 

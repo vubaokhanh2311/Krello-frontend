@@ -5,13 +5,17 @@ importScripts(
   "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js",
 );
 
-firebase.initializeApp({
-  apiKey: "AIzaSyCq_yBR19tkF7ZBDAKj7KI3qJQcH_74UvE",
-  authDomain: "krello-11cfb.firebaseapp.com",
-  projectId: "krello-11cfb",
-  messagingSenderId: "841384297799",
-  appId: "1:841384297799:web:f70e2c166aed019339b862",
-});
+const urlParams = new URLSearchParams(self.location.search);
+
+const firebaseConfig = {
+  apiKey: urlParams.get("apiKey") || "",
+  authDomain: urlParams.get("authDomain") || "",
+  projectId: urlParams.get("projectId") || "",
+  messagingSenderId: urlParams.get("messagingSenderId") || "",
+  appId: urlParams.get("appId") || "",
+};
+
+firebase.initializeApp(firebaseConfig);
 
 const messaging = firebase.messaging();
 
@@ -25,3 +29,25 @@ messaging.onBackgroundMessage((payload) => {
     },
   );
 });
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const targetUrl = event.notification.data?.url || "/";
+
+  event.waitUntil(
+    clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((windowClients) => {
+        for (const client of windowClients) {
+          if (client.url === targetUrl && "focus" in client) {
+            return client.focus();
+          }
+        }
+        if (clients.openWindow) {
+          return clients.openWindow(targetUrl);
+        }
+      }),
+  );
+});
+

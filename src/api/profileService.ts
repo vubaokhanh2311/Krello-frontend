@@ -43,3 +43,8 @@ export async function getMyStats(): Promise<{
 }> {
   return RestClient.get("/users/stats");
 }
+
+export async function syncFcmToken(fcmToken: string): Promise<void> {
+  return RestClient.post("/users/fcm-token", { fcmToken });
+}
+

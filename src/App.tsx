@@ -6,7 +6,6 @@ import { publicRoute, privateRoute } from "./routes";
 import { DefaultLayout } from "./components/Layout";
 import RequireAuth from "./middleware/RequireAuth";
 import NotFound from "./pages/NotFound";
-import { useFirebaseNotification } from "./hooks/useFirebaseNotification";
 
 const PageLoader = () => (
   <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50/50">
@@ -18,7 +17,6 @@ const PageLoader = () => (
 );
 
 function App() {
-  useFirebaseNotification();
   return (
     <Router>
       <Suspense fallback={<PageLoader />}>

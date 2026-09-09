@@ -3,6 +3,7 @@ import { type ReactNode, useEffect, useRef } from "react";
 import { notifications } from "@mantine/notifications";
 import RestClient from "../api/RestClient";
 import { saveRedirectPath } from "../utils/redirectHelper";
+import { useFirebaseNotification } from "../hooks/useFirebaseNotification";
 
 interface Props {
   children: ReactNode;
@@ -15,6 +16,9 @@ const RequireAuth = ({ children }: Props) => {
   const hasNotified = useRef(false);
 
   const isAuthenticated = Boolean(token && refreshToken);
+
+  // Initialize FCM Push Notifications for authenticated users
+  useFirebaseNotification();
 
   useEffect(() => {
     if (!isAuthenticated && !hasNotified.current) {

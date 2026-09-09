@@ -38,11 +38,12 @@ export default function ForgotPassword() {
       });
 
       form.reset();
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
       notifications.show({
         title: "Lỗi",
         message:
-          error?.response?.data?.message || "Có lỗi xảy ra. Vui lòng thử lại.",
+          err?.response?.data?.message || err?.message || "Có lỗi xảy ra. Vui lòng thử lại.",
         color: "red",
       });
     } finally {

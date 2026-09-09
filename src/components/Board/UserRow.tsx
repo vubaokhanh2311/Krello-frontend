@@ -58,10 +58,11 @@ const UserRow: React.FC<UserRowProps> = ({
             color: "green",
           });
           onRemoved?.(member.id);
-        } catch (error: any) {
+        } catch (error) {
+          const err = error as { message?: string };
           notifications.show({
             title: "Thất bại",
-            message: error?.message || "Xóa thành viên thất bại",
+            message: err?.message || "Xóa thành viên thất bại",
             color: "red",
           });
         } finally {
@@ -91,10 +92,11 @@ const UserRow: React.FC<UserRowProps> = ({
         color: "green",
       });
       onRoleUpdated?.(member.id, uiRole);
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as { message?: string };
       notifications.show({
         title: "Thất bại",
-        message: error?.message || "Cập nhật quyền thất bại",
+        message: err?.message || "Cập nhật quyền thất bại",
         color: "red",
       });
     } finally {

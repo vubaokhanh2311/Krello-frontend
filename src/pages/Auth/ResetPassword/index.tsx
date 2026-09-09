@@ -61,11 +61,13 @@ export default function ResetPassword() {
       setTimeout(() => {
         window.location.href = "/login";
       }, 2000);
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
       notifications.show({
         title: "Đã xảy ra lỗi",
         message:
-          error?.response?.data?.message ||
+          err?.response?.data?.message ||
+          err?.message ||
           "Không thể đặt lại mật khẩu. Vui lòng thử lại.",
         color: "red",
       });

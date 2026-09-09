@@ -28,7 +28,7 @@ export default function LabelPicker({
 
   useEffect(() => {
     fetchLabels(boardId);
-  }, [boardId]);
+  }, [boardId, fetchLabels]);
 
   const filtered = useMemo(() => {
     const keyword = normalizeKeyword(search);

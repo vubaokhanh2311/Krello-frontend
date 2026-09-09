@@ -49,10 +49,11 @@ export default function RegisterForm() {
       setTimeout(() => {
         window.location.href = "/";
       }, 1000);
-    } catch (err: any) {
+    } catch (err) {
+      const errorObj = err as { message?: string };
       notifications.show({
         title: "Thất bại",
-        message: err?.message || "Đăng nhập Google thất bại",
+        message: errorObj?.message || "Đăng nhập Google thất bại",
         color: "red",
       });
       setLoading(false);
@@ -80,10 +81,11 @@ export default function RegisterForm() {
       setTimeout(() => {
         window.location.href = "/login";
       }, 1000);
-    } catch (error: any) {
+    } catch (error) {
+      const errorObj = error as { message?: string };
       notifications.show({
         title: "Thất bại",
-        message: error?.message || "Đăng ký thất bại",
+        message: errorObj?.message || "Đăng ký thất bại",
         color: "red",
       });
       setLoading(false);

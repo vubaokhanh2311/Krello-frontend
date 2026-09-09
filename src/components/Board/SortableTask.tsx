@@ -14,7 +14,7 @@ interface SortableTaskProps {
   onClick?: () => void;
 }
 
-export const SortableTask: React.FC<SortableTaskProps> = ({
+const SortableTaskComponent: React.FC<SortableTaskProps> = ({
   task,
   onDelete,
   isDragging: isOverlayDragging,
@@ -72,9 +72,7 @@ export const SortableTask: React.FC<SortableTaskProps> = ({
       className={`
         relative p-4 mb-2 rounded-lg border shadow-sm cursor-grab 
         bg-white group transition-all duration-200
-        /* Hover effect mượt mà */
         hover:border-blue-400 hover:shadow-md
-        /* Nếu đang là DragOverlay (bản sao bay theo chuột) thì thêm hiệu ứng xoay nhẹ và shadow lớn */
         ${
           isOverlayDragging
             ? "shadow-2xl scale-105 rotate-2 cursor-grabbing ring-2 ring-blue-500 ring-opacity-50 z-50"
@@ -180,3 +178,5 @@ export const SortableTask: React.FC<SortableTaskProps> = ({
     </div>
   );
 };
+
+export const SortableTask = React.memo(SortableTaskComponent);

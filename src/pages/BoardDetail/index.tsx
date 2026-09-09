@@ -1,23 +1,27 @@
 import { useEffect, useCallback, useMemo, useState } from "react";
 import {
   DndContext,
-  closestCenter,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragOverlay,
+  pointerWithin,
+  rectIntersection,
+  defaultDropAnimationSideEffects,
 } from "@dnd-kit/core";
 import type {
   DragStartEvent,
   DragEndEvent,
   DragOverEvent,
+  DropAnimation,
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { IconPlus, IconX, IconShare3, IconSettings } from "@tabler/icons-react";
 import { Avatar, Button } from "@mantine/core";
 import type { Task } from "../../types/BoardDetail";
 import { SortableTask } from "../../components/Board/SortableTask";
-import { Column } from "../../components/Board/Colum";
+import { Column } from "../../components/Board/Column";
 import ShareModal from "../../components/Board/ShareModal";
 import { useDisclosure } from "@mantine/hooks";
 import { useParams } from "react-router-dom";
@@ -26,6 +30,7 @@ import { putCard } from "../../api/cardService";
 import { useLabelStore } from "../../stores/labelStore";
 import { useBoardDetailStore } from "../../stores/boardDetailStore";
 import { useBoardSocket } from "../../hooks/useBoardSocket";
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 
 export default function TaskFlowApp() {
   const { id } = useParams<{ id: string }>();
@@ -65,11 +70,13 @@ export default function TaskFlowApp() {
   useBoardSocket(id || "");
   const fetchLabels = useLabelStore((s) => s.fetchLabels);
 
+  useDocumentTitle(boardDetail?.name ? `Bảng: ${boardDetail.name}` : "Bảng dự án");
+
   const currentActiveTask = useMemo(() => {
     if (!activeCard?.id) return null;
 
     return data.tasks[activeCard.id] || activeCard;
-  }, [activeCard?.id, data.tasks]);
+  }, [activeCard, data.tasks]);
 
   const activeColumnTitle = useMemo(() => {
     if (!currentActiveTask) return "";
@@ -108,6 +115,32 @@ export default function TaskFlowApp() {
     useSensor(PointerSensor, {
       activationConstraint: { distance: 5 },
     }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 150, tolerance: 5 },
+    }),
+  );
+
+  const customCollisionDetection = useCallback((args: Parameters<typeof pointerWithin>[0]) => {
+    const pointerCollisions = pointerWithin(args);
+    if (pointerCollisions.length > 0) {
+      return pointerCollisions;
+    }
+    return rectIntersection(args);
+  }, []);
+
+  const dropAnimationConfig: DropAnimation = useMemo(
+    () => ({
+      sideEffects: defaultDropAnimationSideEffects({
+        styles: {
+          active: {
+            opacity: "0.4",
+          },
+        },
+      }),
+      duration: 250,
+      easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)",
+    }),
+    [],
   );
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -259,8 +292,8 @@ export default function TaskFlowApp() {
   const isUrl = typeof background === "string" && background.startsWith("http");
   if (loadingBoard) {
     return (
-      <div className="flex items-center justify-center h-screen text-white text-xl">
-        Đang tải...
+      <div className="flex items-center justify-center h-screen bg-gray-900 text-white text-lg font-medium">
+        Đang tải bảng công việc...
       </div>
     );
   }
@@ -297,6 +330,7 @@ export default function TaskFlowApp() {
           >
             {boardDetail?.name || ""}
           </h1>
+
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -370,7 +404,7 @@ export default function TaskFlowApp() {
         <div className="min-h-full px-6 py-6 inline-flex items-start gap-6 overflow-y-hidden">
           <DndContext
             sensors={sensors}
-            collisionDetection={closestCenter}
+            collisionDetection={customCollisionDetection}
             onDragEnd={handleDragEnd}
             onDragStart={(e: DragStartEvent) =>
               setActiveId(e.active.id as string)
@@ -439,7 +473,7 @@ export default function TaskFlowApp() {
               )}
             </div>
 
-            <DragOverlay dropAnimation={null}>
+            <DragOverlay dropAnimation={dropAnimationConfig}>
               {activeTask && (
                 <SortableTask
                   task={activeTask}

@@ -17,7 +17,9 @@ import {
   Menu,
   Divider,
   ActionIcon,
+  Tooltip,
 } from "@mantine/core";
+import socketService from "../../../../service/socket.service";
 import { useUserStore } from "../../../../stores/userStore";
 import { logout } from "../../../../api/authService";
 import { Link } from "react-router-dom";
@@ -30,6 +32,12 @@ import { useDebounce } from "../../../../hooks/useDebounce";
 import { resolveAvatarUrl } from "../../../../utils/avatar";
 import { useBoardStore } from "../../../../stores/boardStore";
 
+interface SearchBoardItem {
+  id: string;
+  name: string;
+  background?: string;
+}
+
 export default function Header() {
   const { user } = useUserStore();
 
@@ -38,17 +46,47 @@ export default function Header() {
 
   const [keyword, setKeyword] = useState("");
   const debouncedKeyword = useDebounce(keyword, 300);
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<SearchBoardItem[]>([]);
   const [openSearch, setOpenSearch] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
   const [mobileSearchActive, setMobileSearchActive] = useState(false);
+  const [isSocketConnected, setIsSocketConnected] = useState(socketService.isConnected());
+
+  useEffect(() => {
+    const handleConnect = () => {
+      setIsSocketConnected(true);
+    };
+    const handleDisconnect = () => {
+      setIsSocketConnected(false);
+      notifications.show({
+        id: "socket-disconnect",
+        title: "Mất kết nối thời gian thực",
+        message: "Đang tự động kết nối lại với máy chủ...",
+        color: "yellow",
+        autoClose: 3000,
+      });
+    };
+
+    socketService.on("connect", handleConnect);
+    socketService.on("disconnect", handleDisconnect);
+
+    const interval = setInterval(() => {
+      setIsSocketConnected(socketService.isConnected());
+    }, 2000);
+
+    return () => {
+      socketService.off("connect", handleConnect);
+      socketService.off("disconnect", handleDisconnect);
+      clearInterval(interval);
+    };
+  }, []);
 
   const safeResults = Array.isArray(results) ? results : [];
   const searchContainerRef = useClickOutside(() => setOpenSearch(false));
   const avatarSrc = user ? resolveAvatarUrl(user.avatarUrl) : null;
   const { fetchBoards } = useBoardStore();
-  const handleCreateBoard = async (values: any) => {
+  const handleCreateBoard = async (values: { name: string; background?: string }) => {
     setIsLoading(true);
     try {
       await CreateBoard(values);
@@ -61,10 +99,11 @@ export default function Header() {
       });
       await new Promise((r) => setTimeout(r, 1000));
       close();
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as { message?: string };
       notifications.show({
         title: "Thất bại",
-        message: error?.message || "Tạo bảng thất bại",
+        message: err?.message || "Tạo bảng thất bại",
         color: "red",
       });
     } finally {
@@ -82,7 +121,7 @@ export default function Header() {
       try {
         setIsSearching(true);
         const res = await searchBoards(debouncedKeyword);
-        setResults((res as { data?: any[] })?.data ?? []);
+        setResults((res as { data?: SearchBoardItem[] })?.data ?? []);
         setOpenSearch(true);
       } catch {
         setResults([]);
@@ -171,13 +210,28 @@ export default function Header() {
         </div>
       ) : (
         <div className="w-full mx-auto flex items-center justify-between px-3 md:px-6">
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
             <Link
               to="/"
               className="text-xl font-bold text-blue-600 tracking-tight"
             >
               Krello
             </Link>
+            <Tooltip
+              label={
+                isSocketConnected
+                  ? "Real-time Socket: Đang kết nối"
+                  : "Real-time Socket: Mất kết nối"
+              }
+              withArrow
+              position="bottom"
+            >
+              <span
+                className={`w-2.5 h-2.5 rounded-full inline-block cursor-help ${
+                  isSocketConnected ? "bg-emerald-500 animate-pulse" : "bg-gray-400"
+                }`}
+              />
+            </Tooltip>
           </div>
 
           <div

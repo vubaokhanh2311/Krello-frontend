@@ -9,6 +9,7 @@ import "@mantine/core/styles.css";
 import App from "./App";
 import "./index.css";
 import AuthInitializer from "./auth/AuthInitializer";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -22,9 +23,11 @@ createRoot(document.getElementById("root")!).render(
     >
       <Notifications position="top-right" />
       <ModalsProvider>
-        <AuthInitializer>
-          <App />
-        </AuthInitializer>
+        <ErrorBoundary>
+          <AuthInitializer>
+            <App />
+          </AuthInitializer>
+        </ErrorBoundary>
       </ModalsProvider>
     </MantineProvider>
   </StrictMode>,

@@ -10,21 +10,23 @@ const StatItem = ({
   label: string;
 }) => (
   <div
-    className="flex flex-col items-start p-4 
-             rounded-xl border border-indigo-100
-             bg-gradient-to-br from-indigo-50/60 to-white
-             hover:from-indigo-100 hover:to-white
-             shadow-sm hover:shadow-md
+    className="flex items-center gap-4 p-5 
+             rounded-2xl border border-gray-100/80
+             bg-gradient-to-br from-indigo-50/40 via-white to-indigo-50/20
+             hover:from-indigo-100/50 hover:to-indigo-50/30
+             shadow-sm hover:shadow-md hover:-translate-y-0.5
              transition-all duration-300"
   >
-    <Icon size={28} className="text-indigo-700 mb-2" />
-
-    <span className="text-3xl font-bold text-gray-900">
-      {value}
-      {typeof value === "number" && "+"}
-    </span>
-
-    <span className="text-lg text-gray-600 font-medium">{label}</span>
+    <div className="w-12 h-12 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-200 shrink-0">
+      <Icon size={24} />
+    </div>
+    <div>
+      <span className="block text-2xl font-extrabold text-gray-900 tracking-tight">
+        {value}
+        {typeof value === "number" && "+"}
+      </span>
+      <span className="text-sm text-gray-500 font-medium">{label}</span>
+    </div>
   </div>
 );
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Modal,
   Textarea,
@@ -28,6 +28,7 @@ import type { Task } from "../../utils/mapApiCardToTask";
 import LabelPicker from "./LabelPicker";
 import MemberPicker from "./MemberPicker";
 import type { Member } from "../../types/Member";
+import socketService from "../../service/socket.service";
 import DuePicker from "./DuePicker";
 import { useLabelStore } from "../../stores/labelStore";
 import { useUserStore } from "../../stores/userStore";
@@ -119,6 +120,56 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 
   const [dueDate, setDueDate] = useState<Date | null>(null);
 
+  // --- Typing indicator state ---
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!opened || !task?.id || !boardId) return;
+
+    const handleUserTyping = (data: { cardId: string; userId: string }) => {
+      if (data.cardId === task.id && String(data.userId) !== String(user?.id)) {
+        const member = boardMembers.find((m) => String(m.id) === String(data.userId));
+        const userName = member?.name || "Một thành viên";
+        setTypingUsers((prev) => Array.from(new Set([...prev, userName])));
+      }
+    };
+
+    const handleUserStoppedTyping = (data: { cardId: string; userId: string }) => {
+      if (data.cardId === task.id) {
+        const member = boardMembers.find((m) => String(m.id) === String(data.userId));
+        const userName = member?.name || "Một thành viên";
+        setTypingUsers((prev) => prev.filter((name) => name !== userName));
+      }
+    };
+
+    socketService.on("user:typing", handleUserTyping);
+    socketService.on("user:stopped-typing", handleUserStoppedTyping);
+
+    return () => {
+      socketService.off("user:typing", handleUserTyping);
+      socketService.off("user:stopped-typing", handleUserStoppedTyping);
+      setTypingUsers([]);
+    };
+  }, [opened, task?.id, boardId, user?.id, boardMembers]);
+
+
+
+  const handleCommentTextChange = (value: string) => {
+    setCommentText(value);
+    if (!task || !boardId) return;
+
+    socketService.sendTypingStart(boardId, task.id);
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      socketService.sendTypingStop(boardId, task.id);
+    }, 2000);
+  };
+
   const taskLabels = useMemo(() => {
     if (!task?.labelIds?.length || !Array.isArray(labels)) return [];
 
@@ -137,7 +188,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     if (opened && boardId) {
       fetchLabels(boardId);
     }
-  }, [opened, boardId]);
+  }, [opened, boardId, fetchLabels]);
 
   useEffect(() => {
     if (task) {
@@ -167,7 +218,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     setCommentText("");
     try {
       await addComment(task.id, commentContent);
-    } catch (error) {
+    } catch {
       setCommentText(commentContent);
     }
   };
@@ -217,7 +268,11 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     }
   };
 
-  const startEditingAttachment = (attachment: any) => {
+  const startEditingAttachment = (attachment: {
+    id: string;
+    fileName?: string;
+    fileUrl?: string;
+  }) => {
     setEditingAttachmentId(attachment.id);
     setEditingAttachmentName(
       attachment.fileName || attachment.fileUrl?.split("/").pop() || ""
@@ -690,14 +745,18 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                   minRows={2}
                   autosize
                   value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
+                  onChange={(e) => handleCommentTextChange(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
                       handleAddComment();
                     }
                   }}
                 />
-                <div className="flex justify-end mt-2">
+                <div className="flex justify-between items-center mt-2">
+                  <div className="text-xs text-blue-600 font-medium italic animate-pulse">
+                    {typingUsers.length > 0 &&
+                      `${typingUsers.join(", ")} đang gõ bình luận...`}
+                  </div>
                   <Button
                     size="xs"
                     onClick={handleAddComment}

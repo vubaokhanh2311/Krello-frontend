@@ -178,7 +178,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
         },
         isLoading: false,
       });
-    } catch (error) {
+    } catch {
       set({ isLoading: false });
       notifications.show({
         title: "Thất bại",
@@ -218,7 +218,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
         color: "green",
         autoClose: 2000,
       });
-    } catch (error) {
+    } catch {
       notifications.show({
         title: "Thất bại",
         message: "Thêm danh sách thất bại",
@@ -252,7 +252,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
         color: "green",
         autoClose: 2000,
       });
-    } catch (error) {
+    } catch {
       notifications.show({
         title: "Thất bại",
         message: "Cập nhật tiêu đề thất bại",
@@ -295,7 +295,7 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
         color: "green",
         autoClose: 2000,
       });
-    } catch (error) {
+    } catch {
       notifications.show({
         title: "Thất bại",
         message: "Thêm thẻ thất bại",
@@ -534,11 +534,12 @@ export const useBoardDetailStore = create<BoardDetailStore>((set, get) => ({
               : prevState.activeCard,
         }));
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error toggling member:", err);
+      const errorObj = err as { message?: string };
       notifications.show({
         title: "Lỗi",
-        message: err?.message || "Không thể cập nhật thành viên",
+        message: errorObj?.message || "Không thể cập nhật thành viên",
         color: "red",
       });
     }

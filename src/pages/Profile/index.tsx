@@ -81,7 +81,7 @@ export default function Profile() {
         email: user.email,
       });
     }
-  }, [user]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     let mounted = true;
@@ -164,7 +164,7 @@ export default function Profile() {
       });
 
       setIsEditing(false);
-    } catch (error) {
+    } catch {
       notifications.show({
         title: "Lỗi",
         message: "Không thể cập nhật thông tin!",
@@ -189,7 +189,7 @@ export default function Profile() {
         message: "Cập nhật ảnh đại diện thành công!",
         color: "green",
       });
-    } catch (err) {
+    } catch {
       notifications.show({
         title: "Lỗi",
         message: "Không thể cập nhật ảnh đại diện",
@@ -226,166 +226,196 @@ export default function Profile() {
   };
   if (!user) return null;
   const avatarSrc = resolveAvatarUrl(user.avatarUrl);
+
   return (
-    <div className="min-h-screen bg-gray-100 p-8 md:p-6 font-sans antialiased text-gray-900">
-      <div className="max-w-6xl mx-auto space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="space-y-6">
-            <BentoBox className="flex flex-col items-center text-center">
-              <div className="relative group">
-                <Avatar
-                  size={192}
-                  alt={user.name}
-                  className="border-4 border-indigo-200 shadow-md"
-                >
-                  {avatarSrc && (
-                    <img
-                      src={avatarSrc}
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover rounded-full"
-                    />
-                  )}
-                </Avatar>
-                <label className="absolute inset-0 bg-black/20 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white cursor-pointer">
-                  <IconCamera size={24} />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      if (!e.target.files?.[0]) return;
-                      handleFileChange(e.target.files[0]);
-                    }}
+    <div className="min-h-screen bg-slate-50/50 pb-12 font-sans antialiased text-gray-900">
+      {/* Cover Banner */}
+      <div className="relative h-48 sm:h-64 w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-800 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white/20 via-transparent to-transparent opacity-60 pointer-events-none" />
+        <div className="absolute -bottom-10 -right-10 w-80 h-80 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-10 space-y-6">
+        {/* Main User Card with Avatar */}
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 sm:p-8">
+          <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6">
+            <div className="relative group shrink-0 -mt-16 sm:-mt-20">
+              <Avatar
+                size={140}
+                alt={user.name}
+                className="border-4 border-white shadow-xl bg-white"
+              >
+                {avatarSrc ? (
+                  <img
+                    src={avatarSrc}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover rounded-full"
                   />
-                </label>
+                ) : (
+                  <span className="text-3xl font-extrabold text-indigo-600">
+                    {user.name?.[0]?.toUpperCase() ?? "U"}
+                  </span>
+                )}
+              </Avatar>
+              <label className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-200 text-white cursor-pointer shadow-lg">
+                <IconCamera size={26} />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    if (!e.target.files?.[0]) return;
+                    handleFileChange(e.target.files[0]);
+                  }}
+                />
+              </label>
+            </div>
+
+            <div className="flex-1 text-center sm:text-left space-y-2">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
+                  {user.name}
+                </h1>
+                <span className="inline-flex items-center self-center sm:self-auto px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                  Thành viên Krello
+                </span>
               </div>
-
-              <h2 className="text-3xl font-bold text-gray-800 mb-5">
-                {user.name}
-              </h2>
-
-              <div className="w-full space-y-3 pt-4 border-t border-gray-200">
-                <div className="flex items-center gap-3 text-lg text-gray-700">
-                  <IconMail size={20} className="text-gray-500" />
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-sm text-gray-500 font-medium">
+                <span className="flex items-center gap-1.5">
+                  <IconMail size={16} className="text-indigo-500" />
                   {user.email}
-                </div>
-                <div className="flex items-center gap-3 text-lg text-gray-700">
-                  <IconCalendar size={20} className="text-gray-500" />
-                  Thành viên từ{" "}
-                  {user.createdAt ? new Date(user.createdAt).getFullYear() : ""}
-                </div>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <IconCalendar size={16} className="text-indigo-500" />
+                  Tham gia từ{" "}
+                  {user.createdAt ? new Date(user.createdAt).getFullYear() : "N/A"}
+                </span>
               </div>
-            </BentoBox>
+            </div>
+          </div>
+        </div>
 
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <StatItem
+            icon={IconLayoutGrid}
+            value={loadingStats ? "…" : stats.ownedBoards}
+            label="Bảng sở hữu"
+          />
+          <StatItem
+            icon={IconUsers}
+            value={loadingStats ? "…" : stats.joinedBoards}
+            label="Bảng tham gia"
+          />
+          <StatItem
+            icon={IconFileText}
+            value={loadingStats ? "…" : stats.tasksCreated}
+            label="Tasks đã tạo"
+          />
+        </div>
+
+        {/* Two Column Layout for Profile Info & Activities */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column: Security & Quick Info */}
+          <div className="space-y-6">
             <BentoBox>
-              <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-gray-800">
-                <IconLock size={20} className="text-red-600" /> Tài khoản & Bảo
-                mật
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800">
+                <div className="p-2 bg-red-50 text-red-600 rounded-lg">
+                  <IconLock size={18} />
+                </div>
+                Bảo mật & Tài khoản
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 <button
                   onClick={() => setOpenChangePass(true)}
-                  className="w-full flex items-center justify-between p-3 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                  className="w-full flex items-center justify-between p-3.5 bg-gray-50/80 rounded-xl hover:bg-indigo-50/60 hover:text-indigo-700 transition duration-200 text-left font-medium text-gray-700 text-sm group"
                 >
-                  <span className="font-medium text-gray-700 text-lg">
-                    Đổi mật khẩu
-                  </span>
-                  <IconChevronRight size={18} className="text-gray-500" />
+                  <span className="group-hover:text-indigo-700">Đổi mật khẩu</span>
+                  <IconChevronRight size={18} className="text-gray-400 group-hover:text-indigo-600 transition-transform group-hover:translate-x-0.5" />
                 </button>
-                <button className="w-full flex items-center justify-between p-3 bg-gray-100 rounded-lg hover:bg-gray-200 transition">
-                  <span className="font-medium text-gray-700 text-lg">
-                    Xác thực 2 yếu tố
-                  </span>
-                  <span className="text-xs font-semibold text-green-700">
-                    Đã Bật
+                <button className="w-full flex items-center justify-between p-3.5 bg-gray-50/80 rounded-xl hover:bg-gray-100 transition duration-200 text-left font-medium text-gray-700 text-sm">
+                  <span>Xác thực 2 yếu tố</span>
+                  <span className="text-xs font-bold bg-green-100 text-green-700 px-2.5 py-1 rounded-full">
+                    Đã bật
                   </span>
                 </button>
-                <button
-                  onClick={logout}
-                  className="w-full flex items-center justify-center gap-2 px-5 py-2 border border-red-400 text-red-700 rounded-lg hover:bg-red-50 transition font-medium"
-                >
-                  <IconLogout size={18} /> Đăng xuất
-                </button>
+                <div className="pt-2">
+                  <button
+                    onClick={logout}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-50 text-red-600 hover:bg-red-100/80 rounded-xl transition duration-200 font-semibold text-sm"
+                  >
+                    <IconLogout size={18} /> Đăng xuất tài khoản
+                  </button>
+                </div>
               </div>
             </BentoBox>
           </div>
 
+          {/* Right Column: Basic Information Form & Activity List */}
           <div className="lg:col-span-2 space-y-6">
-            <BentoBox className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-4 bg-indigo-50/10">
-              <StatItem
-                icon={IconLayoutGrid}
-                value={loadingStats ? "…" : stats.ownedBoards}
-                label="Bảng sở hữu"
-              />
-
-              <StatItem
-                icon={IconUsers}
-                value={loadingStats ? "…" : stats.joinedBoards}
-                label="Bảng tham gia"
-              />
-
-              <StatItem
-                icon={IconFileText}
-                value={loadingStats ? "…" : stats.tasksCreated}
-                label="Tasks đã tạo"
-              />
-            </BentoBox>
-
             <BentoBox>
               <form onSubmit={form.onSubmit(handleSave)}>
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold text-gray-800 flex items-center">
-                    <IconUser size={20} className="mr-2 text-indigo-600" />
-                    Thông tin cơ bản
+                <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
+                  <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                      <IconUser size={18} />
+                    </div>
+                    Thông tin cá nhân
                   </h3>
 
                   {!isEditing ? (
                     <Button
-                      variant="outline"
-                      size="sm"
+                      variant="light"
+                      color="indigo"
+                      size="xs"
+                      radius="md"
                       onClick={() => setIsEditing(true)}
-                      leftSection={<IconEdit size={18} />}
+                      leftSection={<IconEdit size={16} />}
                     >
                       Chỉnh sửa
                     </Button>
                   ) : (
-                    <Group gap="sm">
+                    <Group gap="xs">
                       <Button
-                        variant="light"
+                        variant="subtle"
                         color="gray"
-                        size="sm"
+                        size="xs"
+                        radius="md"
                         type="button"
                         onClick={() => {
                           form.reset();
                           setIsEditing(false);
                         }}
-                        leftSection={<IconX size={18} />}
+                        leftSection={<IconX size={16} />}
                       >
                         Hủy
                       </Button>
                       <Button
                         variant="filled"
                         color="indigo"
-                        size="sm"
+                        size="xs"
+                        radius="md"
                         type="submit"
-                        leftSection={<IconDeviceFloppy size={18} />}
+                        leftSection={<IconDeviceFloppy size={16} />}
                       >
-                        Lưu
+                        Lưu thay đổi
                       </Button>
                     </Group>
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <TextInput
                     label="Họ và tên"
                     disabled={!isEditing}
+                    radius="md"
                     {...form.getInputProps("name")}
                   />
 
                   <TextInput
                     label="Email"
                     disabled={!isEditing}
+                    radius="md"
                     {...form.getInputProps("email")}
                   />
                 </div>
@@ -393,9 +423,11 @@ export default function Profile() {
             </BentoBox>
 
             <BentoBox>
-              <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-gray-800 border-b pb-3 border-gray-200">
-                <IconActivity size={20} className="text-indigo-600" /> Nhật ký
-                hoạt động
+              <h3 className="text-lg font-bold mb-5 flex items-center gap-2 text-gray-800 pb-4 border-b border-gray-100">
+                <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
+                  <IconActivity size={18} />
+                </div>
+                Nhật ký hoạt động
               </h3>
 
               <ActivityList
@@ -406,40 +438,53 @@ export default function Profile() {
           </div>
         </div>
       </div>
+
       <Modal
         opened={openChangePass}
         onClose={() => setOpenChangePass(false)}
-        title="Đổi mật khẩu"
+        title={<span className="font-bold text-gray-900 text-lg">Đổi mật khẩu</span>}
         centered
+        radius="lg"
+        padding="lg"
       >
         <form onSubmit={changePassForm.onSubmit(handleChangePassword)}>
-          <div className="space-y-4">
+          <div className="space-y-4 pt-1">
             <PasswordInput
               label="Mật khẩu cũ"
+              placeholder="Nhập mật khẩu hiện tại"
+              radius="md"
               required
               {...changePassForm.getInputProps("oldPassword")}
             />
 
             <PasswordInput
               label="Mật khẩu mới"
+              placeholder="Nhập mật khẩu mới"
+              radius="md"
               required
               {...changePassForm.getInputProps("newPassword")}
             />
 
             <PasswordInput
               label="Xác nhận mật khẩu"
+              placeholder="Nhập lại mật khẩu mới"
+              radius="md"
               required
               {...changePassForm.getInputProps("confirmPassword")}
             />
 
-            <Button
-              type="submit"
-              fullWidth
-              loading={changingPass}
-              color="indigo"
-            >
-              Cập nhật mật khẩu
-            </Button>
+            <div className="pt-2">
+              <Button
+                type="submit"
+                fullWidth
+                loading={changingPass}
+                color="indigo"
+                radius="md"
+                size="md"
+              >
+                Cập nhật mật khẩu
+              </Button>
+            </div>
           </div>
         </form>
       </Modal>

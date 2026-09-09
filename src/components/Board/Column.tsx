@@ -20,7 +20,7 @@ interface ColumnProps {
   onTaskClick: (task: Task) => void;
 }
 
-export const Column: React.FC<ColumnProps> = ({
+const ColumnComponent: React.FC<ColumnProps> = ({
   column,
   tasks,
   onDeleteTask,
@@ -160,3 +160,5 @@ export const Column: React.FC<ColumnProps> = ({
     </div>
   );
 };
+
+export const Column = React.memo(ColumnComponent);

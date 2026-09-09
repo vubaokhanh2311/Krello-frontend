@@ -74,12 +74,14 @@ const InvitationPage = () => {
           navigate(`/board/${res.boardId}`);
         },
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error(error);
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
       notifications.show({
         title: "Thất bại",
         message:
-          error?.response?.data?.message ||
+          err?.response?.data?.message ||
+          err?.message ||
           "Lời mời đã hết hạn hoặc không tồn tại",
         color: "red",
         autoClose: 3000,

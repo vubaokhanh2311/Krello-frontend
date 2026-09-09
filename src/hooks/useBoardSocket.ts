@@ -40,7 +40,12 @@ export const useBoardSocket = (boardId: string) => {
       fetchAttachments(cardId);
     const refreshLabels = () => fetchLabels(boardId);
 
-    CARD_EVENTS.forEach((e) => socketService.on(e, refreshCard));
+    const refreshCardAndLabels = () => {
+      refreshCard();
+      fetchLabels(boardId);
+    };
+
+    CARD_EVENTS.forEach((e) => socketService.on(e, refreshCardAndLabels));
     LIST_EVENTS.forEach((e) => socketService.on(e, refreshList));
     BOARD_EVENTS.forEach((e) => socketService.on(e, refreshBoardImmediate));
 
@@ -61,7 +66,7 @@ export const useBoardSocket = (boardId: string) => {
       refreshCard.cancel();
       refreshList.cancel();
 
-      CARD_EVENTS.forEach((e) => socketService.off(e, refreshCard));
+      CARD_EVENTS.forEach((e) => socketService.off(e, refreshCardAndLabels));
       LIST_EVENTS.forEach((e) => socketService.off(e, refreshList));
       BOARD_EVENTS.forEach((e) => socketService.off(e, refreshBoardImmediate));
 

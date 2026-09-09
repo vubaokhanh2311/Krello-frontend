@@ -1,6 +1,6 @@
 export interface BoardRequest {
   name: string;
-  background: string;
+  background?: string;
 }
 
 export interface BoardQuery {

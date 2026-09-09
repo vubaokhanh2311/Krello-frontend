@@ -56,14 +56,15 @@ export default function LoginForm() {
         setTimeout(() => {
           redirectAfterLogin(navigate);
         }, 1000);
-      } catch (err: any) {
+      } catch (err) {
         console.error("Google login error:", err);
+        const errorObj = err as { response?: { data?: { message?: string } }; message?: string };
 
         notifications.show({
           title: "Đăng nhập thất bại",
           message:
-            err?.response?.data?.message ||
-            err?.message ||
+            errorObj?.response?.data?.message ||
+            errorObj?.message ||
             "Đăng nhập Google thất bại",
           color: "red",
         });
@@ -71,7 +72,7 @@ export default function LoginForm() {
         setLoading(false);
       }
     },
-    [navigate],
+    [navigate, setUser],
   );
 
   const googleButtonRef = useGoogleLogin({
@@ -114,13 +115,14 @@ export default function LoginForm() {
       setTimeout(() => {
         redirectAfterLogin(navigate);
       }, 1000);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Login error:", err);
+      const errorObj = err as { response?: { data?: { message?: string } }; message?: string };
 
       notifications.show({
         title: "Đăng nhập thất bại",
         message:
-          err?.response?.data?.message || err?.message || "Đăng nhập thất bại",
+          errorObj?.response?.data?.message || errorObj?.message || "Đăng nhập thất bại",
         color: "red",
       });
 

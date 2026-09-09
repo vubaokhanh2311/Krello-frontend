@@ -7,6 +7,14 @@ export interface UnsplashPhoto {
   full: string;
 }
 
+interface RawUnsplashPhoto {
+  id: string;
+  urls?: {
+    small?: string;
+    regular?: string;
+  };
+}
+
 export const useUnsplash = (query = "landscape", pageSize = 8) => {
   const [photos, setPhotos] = useState<UnsplashPhoto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,13 +27,13 @@ export const useUnsplash = (query = "landscape", pageSize = 8) => {
 
     const fetchPhotos = async () => {
       try {
-        const res = await RestClient.get<{ data?: UnsplashPhoto[]; results?: UnsplashPhoto[] }>(`/unsplash/search`, {
+        const res = await RestClient.get<RawUnsplashPhoto[] | { data?: RawUnsplashPhoto[]; results?: RawUnsplashPhoto[] }>(`/unsplash/search`, {
           params: { query, pageSize },
         });
 
         console.log("Unsplash response full:", res);
 
-        const results = Array.isArray(res)
+        const results: RawUnsplashPhoto[] = Array.isArray(res)
           ? res
           : Array.isArray(res?.data)
           ? res.data
@@ -35,7 +43,7 @@ export const useUnsplash = (query = "landscape", pageSize = 8) => {
           console.warn("No photos found for query:", query);
         }
 
-        const data: UnsplashPhoto[] = results.map((p: any) => ({
+        const data: UnsplashPhoto[] = results.map((p: RawUnsplashPhoto) => ({
           id: p.id,
           small: p.urls?.small
             ? `${p.urls.small}&auto=format&fit=crop&w=400`
@@ -57,7 +65,7 @@ export const useUnsplash = (query = "landscape", pageSize = 8) => {
     return () => {
       isMounted = false;
     };
-  }, [query]);
+  }, [query, pageSize]);
 
   return { photos, loading };
 };

@@ -62,10 +62,11 @@ const ShareModal: React.FC<ShareModalProps> = ({
 
       form.reset();
       setLoading(false);
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as { message?: string };
       notifications.show({
         title: "Thất bại",
-        message: error?.message || "Không thể gửi lời mời",
+        message: err?.message || "Không thể gửi lời mời",
         color: "red",
         autoClose: 3000,
       });

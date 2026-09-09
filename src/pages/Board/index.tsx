@@ -7,8 +7,10 @@ import {
 import BoardCard from "../../components/Board/BoardCard";
 import Pagination from "../../components/Pagination/Pagination";
 import { useBoardStore } from "../../stores/boardStore";
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 
 export default function BoardsPage() {
+  useDocumentTitle("Bảng của tôi");
   const {
     boards = [],
     boardsJoined = [],

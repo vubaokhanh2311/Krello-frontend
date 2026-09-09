@@ -1,13 +1,15 @@
-import Home from "../pages/Home/index";
-import Board from "../pages/Board/index";
-import Profile from "../pages/Profile/index";
-import Login from "../pages/Auth/Login/index";
-import Register from "../pages/Auth/Register/index";
-import BoardDetail from "../pages/BoardDetail/index";
+import { lazy } from "react";
 import { HeaderOnly } from "../components/Layout";
-import InvitationPage from "../components/Board/InvitationPage";
-import ForgotPassword from "../pages/Auth/ForgotPassword";
-import ResetPassword from "../pages/Auth/ResetPassword";
+
+const Home = lazy(() => import("../pages/Home/index"));
+const Board = lazy(() => import("../pages/Board/index"));
+const Profile = lazy(() => import("../pages/Profile/index"));
+const Login = lazy(() => import("../pages/Auth/Login/index"));
+const Register = lazy(() => import("../pages/Auth/Register/index"));
+const BoardDetail = lazy(() => import("../pages/BoardDetail/index"));
+const InvitationPage = lazy(() => import("../components/Board/InvitationPage"));
+const ForgotPassword = lazy(() => import("../pages/Auth/ForgotPassword"));
+const ResetPassword = lazy(() => import("../pages/Auth/ResetPassword"));
 
 export interface AppRoute {
   path: string;
@@ -27,7 +29,7 @@ export const publicRoute: AppRoute[] = [
     layout: null,
   },
   {
-    path: "boards/invite/accept",
+    path: "/boards/invite/accept",
     component: InvitationPage,
     layout: null,
   },

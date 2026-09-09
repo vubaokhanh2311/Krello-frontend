@@ -8,6 +8,8 @@ interface UseGoogleLoginProps {
 export function useGoogleLogin({ onSuccess }: UseGoogleLoginProps) {
   const googleButtonRef = useRef<HTMLDivElement>(null);
   const initializedRef = useRef(false);
+  const onSuccessRef = useRef(onSuccess);
+  onSuccessRef.current = onSuccess;
 
   useEffect(() => {
     if (initializedRef.current) return;
@@ -20,7 +22,7 @@ export function useGoogleLogin({ onSuccess }: UseGoogleLoginProps) {
         client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "",
         callback: (response) => {
           if (response.credential) {
-            onSuccess(response.credential);
+            onSuccessRef.current(response.credential);
           } else {
             notifications.show({
               title: "Lỗi",

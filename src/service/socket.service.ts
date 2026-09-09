@@ -17,7 +17,7 @@ class SocketService {
     this.isConnecting = true;
 
     this.socket = io(import.meta.env.VITE_SOCKET_URL, {
-      transports: ["websocket"],
+      transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 800,
@@ -132,10 +132,12 @@ class SocketService {
     );
   }
 
-  on<T = unknown>(event: string, handler: (data: T) => void) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  on<T = any>(event: string, handler: (data: T) => void) {
     this.socket?.on(event, handler);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   off(event: string, handler?: (...args: any[]) => void) {
     if (!this.socket) return;
 
@@ -153,13 +155,21 @@ class SocketService {
 
   emit<T = unknown>(
     event: string,
-    data: any,
+    data?: unknown,
     callback?: (response: T) => void,
   ) {
     if (!this.socket?.connected) return;
 
     if (callback) this.socket.emit(event, data, callback);
     else this.socket.emit(event, data);
+  }
+
+  sendTypingStart(boardId: string, cardId: string) {
+    this.emit("typing:start", { boardId, cardId });
+  }
+
+  sendTypingStop(boardId: string, cardId: string) {
+    this.emit("typing:stop", { boardId, cardId });
   }
 }
 

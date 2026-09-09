@@ -6,9 +6,10 @@ import type {
   AxiosError,
   InternalAxiosRequestConfig,
 } from "axios";
-import { toast } from "react-toastify";
+import { notifications } from "@mantine/notifications";
 
-const API_BASE_URL = `${import.meta.env.VITE_URL_API}/api`;
+const rawApiUrl = (import.meta.env.VITE_URL_API || "http://localhost:3000").replace(/\/$/, "");
+const API_BASE_URL = rawApiUrl.endsWith("/api") ? rawApiUrl : `${rawApiUrl}/api`;
 
 interface ApiError {
   message: string;
@@ -25,8 +26,8 @@ class RestClient {
   private client: AxiosInstance;
   private isRefreshing = false;
   private failedQueue: Array<{
-    resolve: (value?: any) => void;
-    reject: (reason?: any) => void;
+    resolve: (value?: unknown) => void;
+    reject: (reason?: unknown) => void;
   }> = [];
 
   constructor() {
@@ -172,7 +173,7 @@ class RestClient {
     );
   }
 
-  private processQueue(error: any, token: string | null): void {
+  private processQueue(error: unknown, token: string | null): void {
     this.failedQueue.forEach((promise) => {
       if (error) {
         promise.reject(error);
@@ -213,7 +214,10 @@ class RestClient {
   private handleLogout(): void {
     this.clearTokens();
 
-    toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!", {
+    notifications.show({
+      title: "Hết hạn phiên đăng nhập",
+      message: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!",
+      color: "red",
       autoClose: 2000,
     });
 
@@ -264,7 +268,7 @@ class RestClient {
 
   async post<T>(
     url: string,
-    data?: any,
+    data?: unknown,
     config?: AxiosRequestConfig,
   ): Promise<T> {
     const response = await this.client.post<T>(url, data, config);
@@ -273,7 +277,7 @@ class RestClient {
 
   async put<T>(
     url: string,
-    data?: any,
+    data?: unknown,
     config?: AxiosRequestConfig,
   ): Promise<T> {
     const response = await this.client.put<T>(url, data, config);
@@ -282,7 +286,7 @@ class RestClient {
 
   async patch<T>(
     url: string,
-    data?: any,
+    data?: unknown,
     config?: AxiosRequestConfig,
   ): Promise<T> {
     const response = await this.client.patch<T>(url, data, config);

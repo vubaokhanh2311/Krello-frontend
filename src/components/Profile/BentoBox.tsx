@@ -8,7 +8,7 @@ const BentoBox = ({
   className?: string;
 }) => (
   <div
-    className={`bg-white p-6 rounded-xl border border-gray-200 shadow-md shadow-gray-200/50 transition duration-300 hover:shadow-lg ${className}`}
+    className={`bg-white/90 backdrop-blur-md p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 ${className}`}
   >
     {children}
   </div>
